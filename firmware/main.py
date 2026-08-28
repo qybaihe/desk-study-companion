@@ -20,6 +20,11 @@ from study_reminder import LowLightReminder, OneShotStudyReminder
 from vl53l0x import VL53L0X
 from voice_device_actions import VoiceDeviceActionHandler
 from voice_qa_client import VoiceQAClient
+try:
+    import sheepy_config as cloud_cfg
+    from net import Net, utc_stamp
+except ImportError:          # 没配云端也要能单机跑
+    cloud_cfg = None
 
 
 # ESP32-S3 maximum supported CPU clock.  Setting it before display/sensor
@@ -453,11 +458,167 @@ next_ntp_attempt = time.ticks_add(time.ticks_ms(), 20_000)
 # automatically instead of leaving both displays frozen indefinitely.
 system_watchdog = WDT(timeout=8_000)
 
+# ── 云端上行 ────────────────────────────────────────────────
+# 60 秒聚合一条上报。10 秒级原始数据留在板子上，云端只要分钟粒度。
+uplink = None
+if cloud_cfg is not None:
+    try:
+        uplink = Net(
+            cloud_cfg.WIFI_SSID, cloud_cfg.WIFI_PASSWORD,
+            cloud_cfg.BASE_URL, cloud_cfg.DEVICE_ID, cloud_cfg.CHILD_ID,
+            batch_seconds=cloud_cfg.BATCH_SECONDS,
+            token=cloud_cfg.API_TOKEN,
+            feed=system_watchdog.feed,     # TLS 握手可能比看门狗还慢
+        )
+        uplink.load_cached_config()
+    except Exception as exc:
+        print("uplink init failed:", exc)
+
+_up_minute = None          # 当前正在聚合的分钟
+_up_acc = None             # 这一分钟的累加器
+
+# 家长动作在屏幕上停留多久
+ACTION_HOLD_MS = 6_000
+action_kind = None         # "feed" / "reward"
+action_until = None
+applied_config_rev = -1
+child_visible = True       # 孩子端可见内容开关，来自 App
+voice_enabled = True
+anim_enabled = True
+
+
+def _apply_downlink_config():
+    """把 App 改的设置真正落到各个阈值上。
+
+    之前这份配置只是被 net.py 落盘缓存了，一次都没人读 —— 家长在
+    App 上改完，板子这边什么都不会发生。
+    """
+    global applied_config_rev, child_visible, voice_enabled, anim_enabled
+    if uplink is None:
+        return
+    cfg = uplink.config
+    rev = cfg.get("rev", -1)
+    if not cfg or rev == applied_config_rev:
+        return
+    applied_config_rev = rev
+
+    goal_h = cfg.get("goal_hours")
+    if goal_h:
+        pet_system.set_daily_goal_seconds(int(goal_h) * 3600)
+
+    dmin, dmax = cfg.get("distance_min"), cfg.get("distance_max")
+    if dmin: PetGrowthSystem.DISTANCE_MIN_MM = int(dmin)
+    if dmax: PetGrowthSystem.DISTANCE_MAX_MM = int(dmax)
+
+    light_min = cfg.get("light_min")
+    if light_min:
+        low_light_reminder.low_threshold = int(light_min)
+        low_light_reminder.recovery_threshold = int(light_min) + 200
+    cooldown = cfg.get("cooldown_s")
+    if cooldown:
+        low_light_reminder.cooldown_ms = int(cooldown) * 1000
+
+    voice_enabled = bool(cfg.get("voice_on", 1))
+    anim_enabled = bool(cfg.get("anim_on", 1))
+    child_visible = bool(cfg.get("child_visible", 1))
+    print("config rev %d applied: goal=%sh dist=%s-%s light_min=%s voice=%d" %
+          (rev, goal_h, dmin, dmax, light_min, voice_enabled))
+
+
+def _apply_actions(now_ms):
+    """家长按下的喂草/奖励：既上屏，也真的作用到小羊身上。
+
+    只闪一下动画而数值不变的话，家长会觉得这个按钮是假的。
+    """
+    global action_kind, action_until
+    if uplink is None:
+        return
+    for kind in uplink.take_actions():
+        if kind == "feed":
+            pet_system._change_stamina(8)          # 喂草回体力
+        elif kind == "reward":
+            pet_system.growth = min(100, pet_system.growth + 5)
+        else:
+            continue
+        pet_system.save()
+        action_kind = kind
+        action_until = time.ticks_add(now_ms, ACTION_HOLD_MS)
+        print("action:", kind, "-> hp", pet_system.stamina,
+              "grow", pet_system.growth)
+        # 立刻把新数值推回去，别让家长等下一个 60 秒的上报周期
+        uplink.hp = pet_system.stamina
+        uplink.grow = pet_system.growth
+        uplink.form = "fed"
+        uplink.push_state()
+
+
+def _action_active(now_ms):
+    if action_until is None:
+        return False
+    return time.ticks_diff(action_until, now_ms) > 0
+
+
+def _uplink_tick(minute_key, present, distance_mm, light_l, light_r,
+                 temperature_c, humidity_percent, motion, abnormal,
+                 stamina, growth, form):
+    """每轮调一次；跨分钟时把上一分钟的均值交给 Net。"""
+    global _up_minute, _up_acc
+    if uplink is None:
+        return
+    if _up_acc is None or minute_key != _up_minute:
+        if _up_acc and _up_acc["n"]:
+            a = _up_acc
+            uplink.add({
+                "ts": a["ts"],
+                # 这一分钟里过半时间在座就算在座
+                "present": a["present"] * 2 >= a["n"],
+                "distance_mm": (a["dist"] // a["dist_n"]) if a["dist_n"] else None,
+                "light_left": a["l1"] // a["n"],
+                "light_right": a["l2"] // a["n"],
+                "temperature": a["temp"],
+                "humidity": a["hum"],
+                "pir_hits": a["pir"],
+                "abnormal": a["abn"] > 0,
+            })
+            uplink.hp, uplink.grow, uplink.form = a["hp"], a["grow"], a["form"]
+        _up_minute = minute_key
+        _up_acc = {"ts": utc_stamp(), "n": 0, "present": 0, "dist": 0,
+                   "dist_n": 0, "l1": 0, "l2": 0, "temp": None, "hum": None,
+                   "pir": 0, "abn": 0, "hp": 100, "grow": 0, "form": "normal"}
+    a = _up_acc
+    a["n"] += 1
+    a["present"] += 1 if present else 0
+    if distance_mm is not None:
+        a["dist"] += distance_mm
+        a["dist_n"] += 1
+    a["l1"] += light_l
+    a["l2"] += light_r
+    if temperature_c is not None:
+        a["temp"] = temperature_c
+    if humidity_percent is not None:
+        a["hum"] = humidity_percent
+    a["pir"] += 1 if motion else 0
+    a["abn"] += 1 if abnormal else 0
+    a["hp"], a["grow"], a["form"] = stamina, growth, form
+
+
 while True:
     system_watchdog.feed()
     # Audio and network state advance independently from the comparatively
     # expensive full-frame LCD/sensor work.
     loop_now = time.ticks_ms()
+    if uplink is not None:
+        try:
+            if uplink.pump():
+                if not clock_synced:
+                    # 对表放后台线程做：NTP 超时 + 退回问 Worker 加起来可能
+                    # 远超主循环 8 秒的看门狗。
+                    clock_synced = uplink.ensure_clock()
+                uplink.poll()          # 空闲时轻量拉配置和家长动作
+            _apply_downlink_config()   # App 改的阈值真正生效
+            _apply_actions(loop_now)   # 家长按的喂草/奖励
+        except Exception as exc:
+            print("uplink pump failed:", exc)
     if (
         last_volume_poll is None
         or time.ticks_diff(loop_now, last_volume_poll) >= 50
@@ -564,7 +725,7 @@ while True:
     reminder_triggered = water_reminder.update(
         presence["present"], study_seconds
     )
-    if reminder_triggered:
+    if reminder_triggered and voice_enabled:
         voice_queue.append("/drink_water.pcm")
     motion_hours = study_seconds // 3600
     motion_minutes = (study_seconds % 3600) // 60
@@ -586,7 +747,7 @@ while True:
     low_light_triggered = low_light_reminder.update(
         presence["present"], light_average, now, time.ticks_diff
     )
-    if low_light_triggered:
+    if low_light_triggered and voice_enabled:
         # Lighting guidance has priority if two reminders become ready in the
         # same sensor update; the 30-second break prompt remains queued.
         voice_queue.insert(0, "/light_too_dark.pcm")
@@ -619,6 +780,35 @@ while True:
         presence["present"], study_seconds, light_average, distance_mm,
         now, day_key, time.ticks_diff,
     )
+
+    if uplink is not None and clock_synced:
+        try:
+            # 板子的 visual_state() 只有 NORMAL/SICK/EVOLVED 三档，而 App
+            # 认六档。护眼产品看不到"光线偏暗"、专注产品分不出"人走了"，
+            # 所以这里按优先级细分一次再上报。
+            if _action_active(loop_now):
+                form = "fed"
+            elif not presence["present"]:
+                form = "away"
+            elif pet_state["visual_state"] == "SICK":
+                form = "sick"
+            elif low_light_reminder.armed is False or low_light_triggered:
+                form = "lowLight"          # 偏暗已触发，还没恢复
+            elif water_reminder.played:
+                form = "restBreak"         # 这一轮的休息提醒已经响过
+            elif pet_state["visual_state"] == "EVOLVED":
+                form = "evolved"
+            else:
+                form = "normal"
+            _uplink_tick(
+                day_key + " %02d:%02d" % (clock[3], clock[4]),
+                presence["present"], distance_mm, v1, v2,
+                temperature_c, humidity_percent, motion,
+                low_light_triggered or not pet_state["environment_ok"],
+                pet_state["stamina"], pet_state["growth"], form,
+            )
+        except Exception as exc:
+            print("uplink tick failed:", exc)
 
     # OLED information only needs a 5 Hz refresh.  Avoid sending the same 1 KB
     # buffer on every 24 FPS LCD animation iteration.
@@ -684,7 +874,8 @@ while True:
         )
         jump_started = normal_animator.update(
             now,
-            visual_state == "NORMAL"
+            anim_enabled                      # App 的「设备动画提示」开关
+            and visual_state == "NORMAL"
             and normal_jump_assets_ok
             and not low_light_voice_active
             and not rest_break_voice_active
@@ -708,6 +899,22 @@ while True:
             pet_title = voice_state_titles[voice_qa.state]
             pet_name = "MOMO"
             normal_region_only = False
+        elif _action_active(now):
+            # 家长刚在 App 上按了喂草/奖励。用现成的帧：喂草放跳跃动画，
+            # 奖励放开花帧 —— 板子上没有专门的"被投喂"素材。
+            normal_region_only = False
+            if action_kind == "reward" and lcd_evolved_sprites:
+                pet_sprite = lcd_evolved_sprites[(now // 400) % 4]
+                pet_title = "REWARD!"
+                pet_name = "THANKS"
+            elif normal_jump_assets_ok:
+                pet_sprite = lcd_normal_animation_sprites[(now // 42) % 48]
+                pet_title = "FED!"
+                pet_name = "YUM"
+            else:
+                pet_sprite = lcd_normal_sprite
+                pet_title = "FED!"
+                pet_name = "YUM"
         elif low_light_voice_active:
             pet_sprite = lcd_low_light_sprites[
                 low_light_voice_animator.frame
@@ -746,24 +953,27 @@ while True:
         pet_name_x = max(1, (146 - len(pet_name) * 16) // 2)
         scaled_text(lcd_fb, pet_name, pet_name_x, 156, 2, WHITE)
 
-        daily_seconds = pet_state["daily_study_seconds"]
-        daily_text = "%02d:%02d:%02d" % (
-            min(99, daily_seconds // 3600),
-            (daily_seconds % 3600) // 60,
-            daily_seconds % 60,
-        )
-        lcd_fb.text("TODAY " + daily_text, 17, 184, WHITE)
-        goal_seconds = pet_state["daily_goal_seconds"]
-        goal_text = "%02d:%02d" % (
-            min(99, goal_seconds // 3600),
-            (goal_seconds % 3600) // 60,
-        )
-        lcd_fb.text(
-            "GOAL %s %3d%%" % (
-                goal_text, pet_state["daily_goal_percent"]
-            ),
-            13, 202, WHITE,
-        )
+        # 「孩子端可见内容」关掉时，屏幕上只留小羊，不显示专注时长和目标。
+        # 小羊本身一直在 —— 孩子该知道设备在陪他，但不必被数字盯着。
+        if child_visible:
+            daily_seconds = pet_state["daily_study_seconds"]
+            daily_text = "%02d:%02d:%02d" % (
+                min(99, daily_seconds // 3600),
+                (daily_seconds % 3600) // 60,
+                daily_seconds % 60,
+            )
+            lcd_fb.text("TODAY " + daily_text, 17, 184, WHITE)
+            goal_seconds = pet_state["daily_goal_seconds"]
+            goal_text = "%02d:%02d" % (
+                min(99, goal_seconds // 3600),
+                (goal_seconds % 3600) // 60,
+            )
+            lcd_fb.text(
+                "GOAL %s %3d%%" % (
+                    goal_text, pet_state["daily_goal_percent"]
+                ),
+                13, 202, WHITE,
+            )
         volume_text = "VOL %3d%%" % voice_player.volume_percent
         lcd_fb.text(
             volume_text,

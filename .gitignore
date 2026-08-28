@@ -1,8 +1,18 @@
 # Private credentials and generated device configuration
+# —— 这两个文件装着 Wi-Fi 密码和 API_TOKEN，仓库是公开的，绝不能进 git。
+#    各自的 .example 模板有提交，照着建一份即可。
+firmware/sheepy_config.py
+apps/ios/Sources/Secrets.swift
 .env
 **/.env
 !**/.env.example
 services/voice_ai/generated/
+
+# Node
+node_modules/
+**/node_modules/
+.wrangler/
+**/.wrangler/
 
 # Python environments and caches
 .venv/
@@ -24,6 +34,9 @@ services/voice_ai/lan_outputs/
 services/voice_ai/event_spool/
 services/voice_ai/server.log
 services/voice_ai/server.pid
+
+# Landing page build output
+apps/landing/dist/
 
 # Local board/generated artifacts
 *.raw32
