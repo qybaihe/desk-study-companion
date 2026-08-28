@@ -431,6 +431,10 @@ voice_player = AudioManager(
     microphone_word_select_pin=42,
     microphone_data_pin=2,
 )
+# B10K potentiometer: outer pins to 3V3/GND, centre wiper to GPIO8.
+volume_knob = ADC(Pin(8))
+volume_knob.atten(ADC.ATTN_11DB)
+last_volume_poll = None
 voice_qa = VoiceQAClient(voice_player, button_pulldown1)
 voice_action_handler = VoiceDeviceActionHandler(pet_system)
 voice_queue = []
@@ -454,6 +458,13 @@ while True:
     # Audio and network state advance independently from the comparatively
     # expensive full-frame LCD/sensor work.
     loop_now = time.ticks_ms()
+    if (
+        last_volume_poll is None
+        or time.ticks_diff(loop_now, last_volume_poll) >= 50
+    ):
+        volume_raw = sum(volume_knob.read() for _ in range(4)) // 4
+        voice_player.set_volume_adc(volume_raw)
+        last_volume_poll = loop_now
     voice_player.update(loop_now)
     voice_qa.update(loop_now)
     # The authenticated Mac service can attach a deterministic device action
@@ -752,6 +763,13 @@ while True:
                 goal_text, pet_state["daily_goal_percent"]
             ),
             13, 202, WHITE,
+        )
+        volume_text = "VOL %3d%%" % voice_player.volume_percent
+        lcd_fb.text(
+            volume_text,
+            max(7, (150 - len(volume_text) * 8) // 2),
+            220,
+            WHITE,
         )
         lcd_fb.text("%3d" % pet_state["stamina"], 200, 30, WHITE)
         stamina_width = 56 * pet_state["stamina"] // 100

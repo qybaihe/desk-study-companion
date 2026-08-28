@@ -11,6 +11,11 @@ class AudioManager:
     LOCAL = "LOCAL"
     STREAM = "STREAM"
     CAPTURE = "CAPTURE"
+    # This ESP32-S3/11 dB ADC reaches about 3.0 V at the pot's measured top.
+    # Treat that repeatable electrical maximum as 100% instead of making full
+    # volume depend on the unattainable ideal code 4095.
+    VOLUME_ADC_MIN = 80
+    VOLUME_ADC_MAX = 3800
 
     def __init__(
         self,
@@ -37,6 +42,13 @@ class AudioManager:
         self.i2s_id = i2s_id
         self.playback_buffer_size = playback_buffer_size
         self.local_buffer = bytearray(local_chunk_size)
+        # Reused by the native I2S shifter so volume changes do not allocate a
+        # fresh PCM buffer and introduce playback pauses.
+        self.volume_buffer = bytearray(local_chunk_size)
+        self.silence_buffer = bytearray(local_chunk_size)
+        self.volume_filtered = None
+        self.volume_level = 8
+        self.volume_percent = 100
 
         self.mode = self.IDLE
         self.audio = None
@@ -107,6 +119,38 @@ class AudioManager:
             ibuf=self.playback_buffer_size,
         )
 
+    def set_volume_adc(self, raw):
+        """Map the GPIO8 potentiometer reading to mute plus eight levels."""
+        raw = max(0, min(4095, int(raw)))
+        if self.volume_filtered is None:
+            self.volume_filtered = raw
+        else:
+            # Suppress ADC jitter without making the knob feel sluggish.
+            self.volume_filtered = (self.volume_filtered * 3 + raw) // 4
+        raw = self.volume_filtered
+        adjusted = max(0, min(self.VOLUME_ADC_MAX, raw))
+        self.volume_percent = adjusted * 100 // self.VOLUME_ADC_MAX
+        if raw <= self.VOLUME_ADC_MIN:
+            self.volume_level = 0
+        else:
+            span = self.VOLUME_ADC_MAX - self.VOLUME_ADC_MIN
+            position = max(0, min(span, raw - self.VOLUME_ADC_MIN))
+            self.volume_level = 1 + min(
+                7,
+                (position * 7 + span // 2) // span,
+            )
+
+    def _write_raw(self, view):
+        offset = 0
+        while offset < len(view):
+            written = self.audio.write(view[offset:])
+            if written is None:
+                written = len(view) - offset
+            if written <= 0:
+                raise RuntimeError("I2S write made no progress")
+            offset += written
+        return offset
+
     def start(self, path=None):
         """Compatibility entry point for the existing local reminder queue."""
         if path is None:
@@ -152,16 +196,26 @@ class AudioManager:
             return False
 
     def _write_all(self, data):
-        view = memoryview(data)
-        offset = 0
-        while offset < len(view):
-            written = self.audio.write(view[offset:])
-            if written is None:
-                written = len(view) - offset
-            if written <= 0:
-                raise RuntimeError("I2S write made no progress")
-            offset += written
-        return offset
+        source = memoryview(data)
+        if self.volume_level >= 8:
+            return self._write_raw(source)
+
+        source_offset = 0
+        while source_offset < len(source):
+            count = min(
+                len(self.volume_buffer), len(source) - source_offset
+            )
+            output = memoryview(self.volume_buffer)[:count]
+            if self.volume_level == 0:
+                output[:] = memoryview(self.silence_buffer)[:count]
+            else:
+                output[:] = source[source_offset : source_offset + count]
+                # Native C implementation: one 6 dB step per level, avoiding
+                # the stutter caused by scaling every PCM sample in Python.
+                I2S.shift(self.volume_buffer, 16, self.volume_level - 8)
+            self._write_raw(output)
+            source_offset += count
+        return len(source)
 
     def write_stream(self, data):
         if self.mode != self.STREAM or self.draining:

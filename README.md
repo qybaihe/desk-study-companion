@@ -89,6 +89,7 @@ make PYTHON=../.venv/bin/python test
 | PIR | IO16 |
 | VL53L0X | SDA IO17 / SCL IO18 |
 | 光敏 | ADC IO6 / IO7 |
+| 音量电位器 | ADC IO8（两侧接3V3/GND） |
 | DHT11 | IO15 |
 | IO10按钮 / LED2 | IO10 / IO9 |
 | 麦克风 | IO41 / IO42 / IO2 |
