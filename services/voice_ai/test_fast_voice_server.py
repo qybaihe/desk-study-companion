@@ -67,6 +67,42 @@ client.sendall(b"VQW1" + struct.pack(">I", len(bad_header)) + bad_header)
 magic, payload = recv_server_header(client)
 assert magic == b"ER01" and not payload["ok"]
 client.close()
+
+# Authenticated telemetry is durably accepted without invoking the AI APIs.
+with tempfile.TemporaryDirectory() as temporary_directory:
+    original_spool_dir = learning_event_sink.SPOOL_DIR
+    original_spool_path = learning_event_sink.SPOOL_PATH
+    original_tidb_configured = learning_event_sink.tidb_store.configured
+    learning_event_sink.tidb_store.configured = lambda: False
+    learning_event_sink.SPOOL_DIR = Path(temporary_directory)
+    learning_event_sink.SPOOL_PATH = (
+        Path(temporary_directory) / "learning_events.jsonl"
+    )
+    telemetry_client = socket.create_connection(server.server_address, timeout=2)
+    telemetry_header = json.dumps(
+        {
+            "event_id": "offline-telemetry-1",
+            "event_type": "study.heartbeat",
+            "device_id": "offline-test",
+            "device_token": token,
+            "session_id": "session-1",
+            "telemetry": {"present": True, "study_seconds": 12},
+        },
+        separators=(",", ":"),
+    ).encode("utf-8")
+    telemetry_client.sendall(
+        b"EVT1" + struct.pack(">I", len(telemetry_header)) + telemetry_header
+    )
+    magic, payload = recv_server_header(telemetry_client)
+    assert magic == b"EV01" and payload["ok"]
+    telemetry_client.close()
+    event = json.loads(learning_event_sink.SPOOL_PATH.read_text("utf-8"))
+    assert event["event_id"] == "offline-telemetry-1"
+    assert event["telemetry"]["present"] is True
+    learning_event_sink.SPOOL_DIR = original_spool_dir
+    learning_event_sink.SPOOL_PATH = original_spool_path
+    learning_event_sink.tidb_store.configured = original_tidb_configured
+
 server.shutdown()
 server.server_close()
 server_thread.join(timeout=2)

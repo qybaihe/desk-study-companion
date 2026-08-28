@@ -30,7 +30,8 @@ docs/                     架构、引脚、板上源码审计
 - 低光照提醒半小时最多一次，并播放对应动画。
 - IO10长按录音、松开后完成MiMo识别、Agent答题和流式语音回答。
 - Wi-Fi自动重连、认证UDP发现、Device Token校验和Mac时间同步。
-- 问答及传感器上下文写入本地事件队列，并预留TiDB Agent Stack HTTP投递。
+- 学习状态、传感器心跳、提醒和问答先写本地队列，再通过TLS写入TiDB Cloud。
+- 当前Git提交的全部文本源码和二进制素材清单可幂等同步到TiDB。
 
 ## 环境准备
 
@@ -59,6 +60,8 @@ make PYTHON=.venv/bin/python deploy     # 烧写/更新开发板文件
 make PYTHON=.venv/bin/python audit      # 重读板上源码并检查一致性
 make PYTHON=.venv/bin/python server     # 启动Mac语音服务
 make PYTHON=.venv/bin/python dashboard  # 家长端 http://127.0.0.1:4173
+make PYTHON=.venv/bin/python tidb-schema # 初始化TiDB数据表
+make PYTHON=.venv/bin/python tidb-sync   # 同步源码快照和素材清单
 ```
 
 本机现有环境也可直接使用上级目录的虚拟环境：
@@ -82,6 +85,8 @@ make PYTHON=../.venv/bin/python test
 | 扬声器 | IO38 / IO39 / IO40 |
 
 完整说明见 `docs/hardware/pinout.md`。
+
+TiDB Cloud连接、表结构和行为上报说明见 `docs/tidb-cloud.md`。
 
 ## 开发板源码一致性
 

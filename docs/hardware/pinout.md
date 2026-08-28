@@ -31,3 +31,14 @@
 - IO35/36/37与八线PSRAM冲突，不作为普通外设引脚使用。
 - VL53L0X 的8190/8191表示超量程，并非真实距离。
 - 底板电源开关处于OFF时，未供电I2C模块可能经ESD二极管拉低总线。
+
+## VL53L0X接线图
+
+VL53L0X模块插座从左到右是 `C / D / G / V`：`C=SCL`、`D=SDA`、
+`G=GND`、`V=3V3`。当前使用独立SoftI2C：D接IO17黄色S列，C接IO18
+黄色S列。
+
+![VL53L0X最终正确接线](images/vl53l0x-wiring-corrected.png)
+
+可编辑矢量版：[`images/vl53l0x-wiring-corrected.svg`](images/vl53l0x-wiring-corrected.svg)。
+仓库同时保留 `board-upright.jpg` 和 `pinout-upright.jpg` 作为实物对照。

@@ -35,11 +35,13 @@ ESP32 → VQW1 + JSON长度 + JSON + WAV
 Mac   → VA01 + JSON长度 + 答案JSON
 Mac   → 多个PCM长度 + PCM16数据
 Mac   → 长度0
+ESP32 → EVT1 + JSON长度 + 带Token的行为/传感器JSON
+Mac   → EV01 + JSON长度 + 持久化结果
 ```
 
 回答最多100个汉字、两句话。完成事件始终落入忽略目录
-`event_spool/learning_events.jsonl`；配置 `TIDB_AGENT_STACK_URL` 后同时HTTP
-投递。
+`event_spool/learning_events.jsonl`；配置 `TIDB_HOST` 等参数后直接写入
+TiDB Cloud，配置 `TIDB_AGENT_STACK_URL` 后还会同时HTTP投递。
 
 ## 测试
 

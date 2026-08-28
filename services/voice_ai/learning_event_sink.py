@@ -7,9 +7,12 @@ import json
 import os
 import threading
 import urllib.request
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+import tidb_store
 
 
 ROOT = Path(__file__).resolve().parent
@@ -37,8 +40,9 @@ def _post_json(url: str, token: str, event: dict[str, Any]) -> int:
 
 
 def publish_learning_event(event: dict[str, Any]) -> dict[str, Any]:
-    """Always spool locally; forward when an Agent Stack URL is configured."""
+    """Spool locally, persist to TiDB, and optionally forward to Agent Stack."""
     enriched = dict(event)
+    enriched.setdefault("event_id", str(uuid.uuid4()))
     enriched.setdefault(
         "event_created_at",
         datetime.now().astimezone().isoformat(timespec="seconds"),
@@ -55,7 +59,17 @@ def publish_learning_event(event: dict[str, Any]) -> dict[str, Any]:
         "spooled": True,
         "spool_path": str(SPOOL_PATH.resolve()),
         "agent_stack_configured": bool(url),
+        "tidb_configured": tidb_store.configured(),
     }
+    if delivery["tidb_configured"]:
+        try:
+            delivery["tidb_event_id"] = tidb_store.persist_event(enriched)
+            delivery["tidb_delivered"] = True
+        except Exception as error:
+            delivery["tidb_delivered"] = False
+            delivery["tidb_error"] = str(error)
+    else:
+        delivery["tidb_delivered"] = False
     if url:
         try:
             delivery["http_status"] = _post_json(url, token, enriched)

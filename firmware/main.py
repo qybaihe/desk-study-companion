@@ -563,6 +563,13 @@ while True:
     previous_present = presence["present"]
     light_average = (v1 + v2) // 2
     light_percent = min(100, light_average * 100 // 4095)
+    low_light_triggered = low_light_reminder.update(
+        presence["present"], light_average, now, time.ticks_diff
+    )
+    if low_light_triggered:
+        # Lighting guidance has priority if two reminders become ready in the
+        # same sensor update; the 30-second break prompt remains queued.
+        voice_queue.insert(0, "/light_too_dark.pcm")
     voice_qa.set_context(
         {
             "session_id": study_session_id,
@@ -577,15 +584,10 @@ while True:
             "temperature_c": temperature_c,
             "humidity_percent": humidity_percent,
             "tof_healthy": bool(tof_healthy),
+            "water_reminder_triggered": bool(reminder_triggered),
+            "low_light_triggered": bool(low_light_triggered),
         }
     )
-    low_light_triggered = low_light_reminder.update(
-        presence["present"], light_average, now, time.ticks_diff
-    )
-    if low_light_triggered:
-        # Lighting guidance has priority if two reminders become ready in the
-        # same sensor update; the 30-second break prompt remains queued.
-        voice_queue.insert(0, "/light_too_dark.pcm")
 
     voice_started = False
     if not voice_player.busy and not voice_qa.busy and voice_queue:

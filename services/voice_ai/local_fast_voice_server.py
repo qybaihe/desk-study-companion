@@ -4,6 +4,8 @@
 Protocol (big-endian lengths):
 client -> ``VQW1`` + JSON length + JSON header + WAV bytes
 server -> ``VA01`` + JSON length + answer JSON + repeated PCM length/data + 0
+client -> ``EVT1`` + JSON length + authenticated behaviour-event JSON
+server -> ``EV01`` + JSON length + persistence result
 
 MiMo returns 24 kHz mono PCM16LE.  The server downsamples it to 16 kHz before
 forwarding so the ESP32's Wi-Fi link has enough headroom for uninterrupted
@@ -113,6 +115,52 @@ def send_header(connection: socket.socket, magic: bytes, payload: dict[str, Any]
 
 
 class VoiceRequestHandler(socketserver.BaseRequestHandler):
+    def _read_header(self, connection: socket.socket) -> dict[str, Any]:
+        header_size = struct.unpack(">I", recv_exact(connection, 4))[0]
+        if not 1 <= header_size <= MAX_HEADER_BYTES:
+            raise ValueError("请求头长度错误")
+        header = json.loads(recv_exact(connection, header_size).decode("utf-8"))
+        if not isinstance(header, dict):
+            raise ValueError("请求头必须是JSON对象")
+        return header
+
+    def _authenticate(self, header: dict[str, Any]) -> str:
+        load_dotenv(DEFAULT_ENV)
+        expected_token = require_setting("VOICE_DEVICE_TOKEN")
+        provided_token = str(header.pop("device_token", ""))
+        if not hmac.compare_digest(provided_token, expected_token):
+            raise PermissionError("设备认证失败")
+        device_id = str(header.get("device_id", "")).strip()
+        if not device_id:
+            raise ValueError("缺少设备ID")
+        return device_id
+
+    def _handle_event(
+        self, connection: socket.socket, header: dict[str, Any]
+    ) -> None:
+        device_id = self._authenticate(header)
+        telemetry = header.get("telemetry")
+        if not isinstance(telemetry, dict):
+            telemetry = {}
+        event = {
+            "event_id": str(header.get("event_id", "")).strip(),
+            "event_type": str(header.get("event_type", "study.telemetry"))[:128],
+            "device_id": device_id,
+            "session_id": str(header.get("session_id", ""))[:128],
+            "source": "esp32.telemetry",
+            "client_ip": self.client_address[0],
+            "telemetry": telemetry,
+        }
+        if not event["event_id"]:
+            event.pop("event_id")
+        delivery = publish_learning_event(event)
+        send_header(connection, b"EV01", {"ok": True, "delivery": delivery})
+        print(
+            "LAN_EVENT client=%s device=%s type=%s"
+            % (self.client_address[0], device_id, event["event_type"]),
+            flush=True,
+        )
+
     def handle(self) -> None:
         connection: socket.socket = self.request
         connection.settimeout(180)
@@ -128,20 +176,14 @@ class VoiceRequestHandler(socketserver.BaseRequestHandler):
         pcm_path = OUTPUT_DIR / (stamp + "-answer-16k.pcm")
         result_path = OUTPUT_DIR / (stamp + "-result.json")
         try:
-            if recv_exact(connection, 4) != b"VQW1":
+            magic = recv_exact(connection, 4)
+            header = self._read_header(connection)
+            if magic == b"EVT1":
+                self._handle_event(connection, header)
+                return
+            if magic != b"VQW1":
                 raise ValueError("协议标识错误")
-            header_size = struct.unpack(">I", recv_exact(connection, 4))[0]
-            if not 1 <= header_size <= MAX_HEADER_BYTES:
-                raise ValueError("请求头长度错误")
-            header = json.loads(recv_exact(connection, header_size).decode("utf-8"))
-            load_dotenv(DEFAULT_ENV)
-            expected_token = require_setting("VOICE_DEVICE_TOKEN")
-            provided_token = str(header.pop("device_token", ""))
-            if not hmac.compare_digest(provided_token, expected_token):
-                raise PermissionError("设备认证失败")
-            device_id = str(header.get("device_id", "")).strip()
-            if not device_id:
-                raise ValueError("缺少设备ID")
+            device_id = self._authenticate(header)
             audio_bytes = int(header.get("audio_bytes", 0))
             if not 44 <= audio_bytes <= MAX_AUDIO_BYTES:
                 raise ValueError("录音长度不合理")

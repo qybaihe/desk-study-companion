@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1080" viewBox="0 0 2048 1080">
+  <defs>
+    <marker id="arrowCyan" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 Z" fill="#00e5ff"/></marker>
+    <marker id="arrowYellow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 Z" fill="#ffd400"/></marker>
+    <style>
+      .cn { font-family: "Sarasa UI SC"; }
+      .title { font-size: 34px; font-weight: 700; fill: #fff; }
+      .label { font-size: 25px; font-weight: 650; fill: #fff; }
+      .small { font-size: 21px; font-weight: 600; fill: #eaf5ff; }
+      .pin { font-size: 25px; font-weight: 750; fill: #fff; text-anchor: middle; }
+      .row { font-size: 26px; font-weight: 750; fill: #fff; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <rect width="2048" height="1080" fill="#09131d"/>
+  <image href="board-upright.jpg" x="0" y="0" width="1440" height="1080" preserveAspectRatio="none"/>
+
+  <!-- Exact physical module location -->
+  <rect x="1182" y="250" width="210" height="225" rx="14" fill="none" stroke="#00e5ff" stroke-width="7"/>
+  <rect x="925" y="176" width="410" height="62" rx="12" fill="#07131ddd" stroke="#00e5ff" stroke-width="3"/>
+  <text class="cn label" x="951" y="216">① VL53L0X 距离传感器</text>
+  <path d="M1230,238 L1260,270" stroke="#00e5ff" stroke-width="6" fill="none" marker-end="url(#arrowCyan)"/>
+
+  <!-- Exact GPIO17 / GPIO18 rows on the LEFT header -->
+  <rect x="532" y="746" width="70" height="19" rx="5" fill="#ffd40033" stroke="#ffd400" stroke-width="4"/>
+  <rect x="532" y="765" width="70" height="19" rx="5" fill="#1d8cff33" stroke="#1d8cff" stroke-width="4"/>
+  <rect x="265" y="685" width="250" height="92" rx="12" fill="#07131ddd" stroke="#ffd400" stroke-width="3"/>
+  <text class="cn label" x="291" y="721">② 左侧排针</text>
+  <text class="cn small" x="291" y="754">IO17（黄色）/ IO18（蓝色）</text>
+  <path d="M515,735 L544,755" stroke="#ffd400" stroke-width="5" fill="none" marker-end="url(#arrowYellow)"/>
+
+  <!-- Right explanatory panel -->
+  <rect x="1440" y="0" width="608" height="1080" fill="#07131df5"/>
+  <line x1="1440" y1="0" x2="1440" y2="1080" stroke="#80deea" stroke-width="3"/>
+  <text class="cn title" x="1475" y="58">正确接法：使用第二组 SoftI2C</text>
+
+  <rect x="1475" y="82" width="538" height="77" rx="13" fill="#172632" stroke="#ffcc00" stroke-width="3"/>
+  <text class="cn small" x="1498" y="113">OLED 保持不动：</text>
+  <text class="cn label" x="1498" y="145" fill="#ffd400">IO4 = SDA　 IO5 = SCL</text>
+
+  <!-- Sensor connector diagram -->
+  <text class="cn label" x="1478" y="207">VL53L0X 插座（模块上从左到右）</text>
+  <rect x="1510" y="231" width="468" height="123" rx="16" fill="#101e28" stroke="#00e5ff" stroke-width="4"/>
+  <line x1="1570" y1="293" x2="1920" y2="293" stroke="#dce7ed" stroke-width="13" stroke-linecap="round"/>
+  <circle cx="1600" cy="293" r="20" fill="#1688ff" stroke="#fff" stroke-width="3"/>
+  <circle cx="1710" cy="293" r="20" fill="#00b83f" stroke="#fff" stroke-width="3"/>
+  <circle cx="1820" cy="293" r="20" fill="#111" stroke="#fff" stroke-width="3"/>
+  <circle cx="1930" cy="293" r="20" fill="#f12b24" stroke="#fff" stroke-width="3"/>
+  <text class="cn pin" x="1600" y="264">C</text>
+  <text class="cn pin" x="1710" y="264">D</text>
+  <text class="cn pin" x="1820" y="264">G</text>
+  <text class="cn pin" x="1930" y="264">V</text>
+  <text class="cn small" x="1550" y="337" fill="#1688ff">SCL</text>
+  <text class="cn small" x="1660" y="337" fill="#00db51">SDA</text>
+  <text class="cn small" x="1793" y="337">GND</text>
+  <text class="cn small" x="1901" y="337" fill="#ff514a">3V3</text>
+
+  <!-- Wiring paths, routed separately -->
+  <path d="M1600,314 C1600,430 1990,450 1990,844 L1940,844" fill="none" stroke="#1688ff" stroke-width="8"/>
+  <path d="M1710,314 C1710,440 1960,470 1960,702 L1940,702" fill="none" stroke="#00c94b" stroke-width="8"/>
+  <path d="M1820,314 C1820,450 1510,470 1510,702 L1600,702" fill="none" stroke="#f4f4f4" stroke-width="11"/>
+  <path d="M1820,314 C1820,450 1510,470 1510,702 L1600,702" fill="none" stroke="#111" stroke-width="7"/>
+  <path d="M1930,314 C1930,430 1760,480 1760,702 L1770,702" fill="none" stroke="#f12b24" stroke-width="8"/>
+
+  <!-- Header diagram -->
+  <text class="cn label" x="1478" y="545">主板左侧三色排针</text>
+  <text class="cn small" x="1478" y="578">列顺序：黑色 G　红色 3V3　黄色 S</text>
+  <rect x="1505" y="603" width="493" height="321" rx="16" fill="#101e28" stroke="#8aa4b5" stroke-width="3"/>
+  <text class="cn pin" x="1620" y="650">黑 G</text>
+  <text class="cn pin" x="1780" y="650">红 3V3</text>
+  <text class="cn pin" x="1940" y="650">黄 S</text>
+
+  <text class="cn row" x="1548" y="710">IO17</text>
+  <circle cx="1620" cy="702" r="23" fill="#111" stroke="#fff" stroke-width="4"/>
+  <circle cx="1780" cy="702" r="23" fill="#f12b24" stroke="#fff" stroke-width="4"/>
+  <circle cx="1940" cy="702" r="23" fill="#00c94b" stroke="#fff" stroke-width="4"/>
+  <text class="cn small" x="1589" y="754">GND</text>
+  <text class="cn small" x="1748" y="754">3V3</text>
+  <text class="cn small" x="1905" y="754">SDA</text>
+
+  <line x1="1530" y1="787" x2="1972" y2="787" stroke="#46606f" stroke-width="2"/>
+  <text class="cn row" x="1548" y="852">IO18</text>
+  <circle cx="1620" cy="844" r="23" fill="#263844" stroke="#78909c" stroke-width="3"/>
+  <circle cx="1780" cy="844" r="23" fill="#263844" stroke="#78909c" stroke-width="3"/>
+  <circle cx="1940" cy="844" r="23" fill="#1688ff" stroke="#fff" stroke-width="4"/>
+  <text class="cn small" x="1906" y="896">SCL</text>
+
+  <rect x="1475" y="946" width="538" height="102" rx="13" fill="#2a1f0b" stroke="#ffb300" stroke-width="3"/>
+  <text class="cn label" x="1498" y="986">接线时拨到 OFF</text>
+  <text class="cn small" x="1498" y="1023">接好后拨到 ON；程序使用 SDA=17、SCL=18</text>
+</svg>

@@ -1,5 +1,5 @@
 {
-  "audited_at": "2026-08-28T13:37:05+08:00",
+  "audited_at": "2026-08-28T14:08:12+08:00",
   "source": "ESP32-S3 root filesystem",
   "secret_files_excluded": [
     "/voice_qa_config.py"
@@ -31,8 +31,8 @@
     },
     {
       "path": "/main.py",
-      "size": 28574,
-      "crc32": "8ce6d660",
+      "size": 28702,
+      "crc32": "c1e1920c",
       "captured": true,
       "canonical": "firmware/main.py",
       "matches_canonical": true
@@ -111,8 +111,8 @@
     },
     {
       "path": "/voice_qa_client.py",
-      "size": 28071,
-      "crc32": "8a14eb1d",
+      "size": 35226,
+      "crc32": "e421b53a",
       "captured": true,
       "canonical": "firmware/voice_qa_client.py",
       "matches_canonical": true

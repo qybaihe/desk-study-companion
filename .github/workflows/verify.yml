@@ -1,0 +1,28 @@
+name: Verify monorepo
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: make compile
+      - run: |
+          cp services/voice_ai/.env.example services/voice_ai/.env
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("services/voice_ai/.env")
+          text = path.read_text()
+          text = text.replace("VOICE_DEVICE_TOKEN=GENERATE_WITH_BUILD_SCRIPT", "VOICE_DEVICE_TOKEN=ci-test-token")
+          path.write_text(text)
+          PY
+          make test

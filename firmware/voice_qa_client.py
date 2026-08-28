@@ -77,11 +77,17 @@ class VoiceQAClient:
     BUTTON_DEBOUNCE_MS = 40
     PLAYBACK_PREBUFFER_MS = 2_000
     MAX_PLAYBACK_PREBUFFER_BYTES = 131_072
+    TELEMETRY_HEARTBEAT_MS = 60_000
+    TELEMETRY_RETRY_MS = 10_000
 
     def __init__(self, audio_manager, button_pin):
         self.audio = audio_manager
         self.button = button_pin
         self.device_id = binascii.hexlify(unique_id()).decode()
+        try:
+            self._boot_id = binascii.hexlify(os.urandom(4)).decode()
+        except Exception:
+            self._boot_id = "%08x" % (time.ticks_ms() & 0xFFFFFFFF)
 
         self.state = self.IDLE
         self.state_started_at = time.ticks_ms()
@@ -89,6 +95,9 @@ class VoiceQAClient:
         self.error = ""
         self.question_count = 0
         self.context = {}
+        self._pending_telemetry_events = []
+        self._telemetry_sequence = 0
+        self._next_telemetry_at = time.ticks_add(self.state_started_at, 5_000)
 
         self.station = network.WLAN(network.STA_IF)
         self.station.active(True)
@@ -167,7 +176,109 @@ class VoiceQAClient:
         return bool(self.station.isconnected())
 
     def set_context(self, context):
-        self.context = dict(context or {})
+        updated = dict(context or {})
+        previous = self.context
+        if updated and not previous:
+            self._queue_telemetry_event("device.snapshot", updated)
+        elif previous:
+            if bool(updated.get("present")) != bool(previous.get("present")):
+                self._queue_telemetry_event(
+                    "study.started" if updated.get("present") else "study.ended",
+                    updated,
+                )
+            if bool(updated.get("pir_motion")) and not bool(
+                previous.get("pir_motion")
+            ):
+                self._queue_telemetry_event("sensor.motion", updated)
+            if (
+                updated.get("session_id")
+                and updated.get("session_id") != previous.get("session_id")
+                and bool(updated.get("present"))
+            ):
+                self._queue_telemetry_event("study.session_started", updated)
+        if updated.get("water_reminder_triggered"):
+            self._queue_telemetry_event("reminder.rest_and_water", updated)
+        if updated.get("low_light_triggered"):
+            self._queue_telemetry_event("reminder.low_light", updated)
+        self.context = updated
+
+    def _queue_telemetry_event(self, event_type, telemetry=None):
+        if any(
+            pending["event_type"] == event_type
+            for pending in self._pending_telemetry_events
+        ):
+            return
+        if len(self._pending_telemetry_events) >= 16:
+            self._pending_telemetry_events.pop(0)
+        self._pending_telemetry_events.append(
+            {
+                "event_type": event_type,
+                "telemetry": dict(telemetry or self.context),
+            }
+        )
+
+    def _send_telemetry_event(self, now_ms, event_type, telemetry):
+        self._telemetry_sequence = (self._telemetry_sequence + 1) & 0xFFFF
+        event_clock = str(telemetry.get("beijing_time", ""))
+        event_clock = event_clock.replace("-", "").replace(":", "").replace(" ", "T")
+        event_id = "%s-%s-%s-%08x-%04x" % (
+            self.device_id,
+            self._boot_id,
+            event_clock or "boot",
+            now_ms & 0xFFFFFFFF,
+            self._telemetry_sequence,
+        )
+        header = {
+            "event_id": event_id,
+            "event_type": event_type,
+            "device_id": self.device_id,
+            "device_token": DEVICE_TOKEN,
+            "session_id": telemetry.get("session_id", ""),
+            "telemetry": telemetry,
+        }
+        encoded = json.dumps(header).encode()
+        packet = b"EVT1" + struct.pack(">I", len(encoded)) + encoded
+        connection = socket.socket()
+        try:
+            connection.settimeout(0.75)
+            connection.connect((self.server_host, self.server_port))
+            offset = 0
+            while offset < len(packet):
+                sent = connection.send(memoryview(packet)[offset:])
+                if not sent:
+                    raise RuntimeError("telemetry socket closed")
+                offset += sent
+        finally:
+            try:
+                connection.close()
+            except Exception:
+                pass
+
+    def _update_telemetry(self, now_ms):
+        if (
+            not self.context
+            or not self.wifi_connected
+            or bool(self.button.value())
+        ):
+            return
+        pending = bool(self._pending_telemetry_events)
+        if not pending and time.ticks_diff(now_ms, self._next_telemetry_at) < 0:
+            return
+        pending_event = self._pending_telemetry_events[0] if pending else None
+        event_type = (
+            pending_event["event_type"] if pending_event else "study.heartbeat"
+        )
+        telemetry = pending_event["telemetry"] if pending_event else self.context
+        try:
+            self._send_telemetry_event(now_ms, event_type, telemetry)
+            if pending:
+                self._pending_telemetry_events.pop(0)
+            delay = 250 if self._pending_telemetry_events else self.TELEMETRY_HEARTBEAT_MS
+            self._next_telemetry_at = time.ticks_add(now_ms, delay)
+        except Exception:
+            self._next_telemetry_at = time.ticks_add(
+                now_ms, self.TELEMETRY_RETRY_MS
+            )
 
     def take_beijing_rtc(self):
         value = self._pending_beijing_rtc
@@ -812,6 +923,8 @@ class VoiceQAClient:
 
         if self.state == self.IDLE:
             pressed = bool(self.button.value())
+            if not pressed:
+                self._update_telemetry(now_ms)
             if not self._button_armed:
                 if not pressed:
                     self._button_armed = True
