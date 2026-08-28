@@ -152,7 +152,8 @@ def save_state(
             state_file.write(
                 "pet_stage=%d pet_growth=%d stamina=%d sick=%d "
                 "pet_visual=%s daily_study_seconds=%d daily_goal_seconds=%d "
-                "daily_goal_percent=%d env_ok=%d jump_count=%d "
+                "daily_goal_percent=%d daily_goal_growth=%d/%d "
+                "env_ok=%d jump_count=%d "
                 "jump_frame=%d jump_assets=%d jump_duration_ms=%d\n"
                 % (
                     pet_state["stage"], pet_state["growth"],
@@ -161,6 +162,8 @@ def save_state(
                     pet_state["daily_study_seconds"],
                     pet_state["daily_goal_seconds"],
                     pet_state["daily_goal_percent"],
+                    pet_state["daily_goal_growth_awarded"],
+                    pet_state["daily_goal_growth_max"],
                     1 if pet_state["environment_ok"] else 0,
                     normal_jump_count, normal_jump_frame,
                     1 if normal_jump_assets_ok else 0,

@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 
@@ -14,6 +15,8 @@ with tempfile.TemporaryDirectory() as directory:
     pet = PetGrowthSystem(path, config_path)
 
     # First 45-minute focus milestone and each extra 30 minutes award once.
+    state = pet.update(True, 2699, 2500, 600, 0, "2026-08-27", diff)
+    assert state["growth"] == 0
     state = pet.update(True, 2700, 2500, 600, 0, "2026-08-27", diff)
     assert state["growth"] == 5 and state["event"] == "FOCUS +5"
     state = pet.update(True, 4500, 2500, 600, 1000, "2026-08-27", diff)
@@ -26,22 +29,38 @@ with tempfile.TemporaryDirectory() as directory:
     state = pet.update(True, 2700, 2500, 600, 4000, "2026-08-27", diff)
     assert state["growth"] == 13
 
-    # Four accumulated hours award the daily goal exactly once.
-    pet.daily_study_ms = pet.daily_goal_seconds * 1000 - 1000
+    # Daily cumulative progress awards 0..60 proportionally to the goal.
+    goal_ms = pet.daily_goal_seconds * 1000
+    pet.daily_study_ms = goal_ms // 4
     pet.last_update_ms = 4000
-    state = pet.update(True, 10, 2500, 600, 5000, "2026-08-27", diff)
+    state = pet.update(False, 0, 2500, None, 5000, "2026-08-27", diff)
+    assert state["daily_goal_growth_awarded"] == 15
+    assert state["growth"] == 28 and state["event"] == "GOAL +15"
+
+    pet.daily_study_ms = goal_ms // 2
+    state = pet.update(False, 0, 2500, None, 6000, "2026-08-27", diff)
+    assert state["daily_goal_growth_awarded"] == 30
+    assert state["growth"] == 43 and state["event"] == "GOAL +15"
+
+    pet.daily_study_ms = goal_ms - 1000
+    state = pet.update(False, 0, 2500, None, 7000, "2026-08-27", diff)
+    assert state["daily_goal_growth_awarded"] == 59
+    assert state["growth"] == 72 and state["event"] == "GOAL +29"
+
+    state = pet.update(True, 1, 2500, 600, 8000, "2026-08-27", diff)
     assert state["daily_goal_awarded"]
-    assert state["growth"] == 63
-    pet.update(True, 11, 2500, 600, 6000, "2026-08-27", diff)
-    assert pet.growth == 63
+    assert state["daily_goal_growth_awarded"] == 60
+    assert state["growth"] == 73 and state["event"] == "GOAL +1"
+    pet.update(True, 2, 2500, 600, 9000, "2026-08-27", diff)
+    assert pet.growth == 73
 
     # Bad light/distance has a 10-second grace, then drains one point/30 sec.
     pet.stamina = 50
-    pet.last_update_ms = 6000
+    pet.last_update_ms = 9000
     for second in range(1, 41):
         state = pet.update(
             True, 12 + second, 100, 1200,
-            6000 + second * 1000, "2026-08-27", diff,
+            9000 + second * 1000, "2026-08-27", diff,
         )
     assert state["stamina"] == 49 and not state["environment_ok"]
 
@@ -49,22 +68,23 @@ with tempfile.TemporaryDirectory() as directory:
     for second in range(1, 301):
         state = pet.update(
             True, 60 + second, 2500, 600,
-            46_000 + second * 1000, "2026-08-27", diff,
+            49_000 + second * 1000, "2026-08-27", diff,
         )
     assert state["stamina"] == 50 and state["environment_ok"]
 
     # Daily study resets on the next valid date; lifetime growth/stamina remain.
     growth_before = pet.growth
     stamina_before = pet.stamina
-    state = pet.update(False, 0, 2500, None, 347_000, "2026-08-28", diff)
+    state = pet.update(False, 0, 2500, None, 350_000, "2026-08-28", diff)
     assert state["daily_study_seconds"] == 0
     assert not state["daily_goal_awarded"]
+    assert state["daily_goal_growth_awarded"] == 0
     assert state["growth"] == growth_before
     assert state["stamina"] == stamina_before
 
     # A backwards unsynchronised clock must not erase the new day's progress.
     pet.daily_study_ms = 123_000
-    pet.update(False, 0, 2500, None, 348_000, "2026-08-24", diff)
+    pet.update(False, 0, 2500, None, 351_000, "2026-08-24", diff)
     assert pet.day_key == "2026-08-28" and pet.daily_study_ms == 123_000
 
     # Growth above 80 maps to new image 2; exactly 80 remains normal.
@@ -89,5 +109,32 @@ with tempfile.TemporaryDirectory() as directory:
     assert restored.growth == 81
     assert restored.stamina == 29
     assert restored.day_key == "2026-08-28"
+
+
+# A completed v1 day already received 50 points. Migration grants only the
+# remaining 10 points, bringing that day's proportional reward to 60.
+with tempfile.TemporaryDirectory() as directory:
+    path = os.path.join(directory, "pet_state.json")
+    config_path = os.path.join(directory, "pet_config.json")
+    with open(path, "w", encoding="utf-8") as state_file:
+        json.dump(
+            {
+                "version": 1,
+                "day_key": "2026-08-28",
+                "daily_study_ms": 4 * 60 * 60 * 1000,
+                "daily_goal_awarded": True,
+                "growth": 50,
+                "stamina": 100,
+            },
+            state_file,
+        )
+    migrated = PetGrowthSystem(path, config_path)
+    assert migrated.daily_goal_growth_awarded == 50
+    state = migrated.update(
+        False, 0, 2500, None, 0, "2026-08-28", diff,
+    )
+    assert state["growth"] == 60
+    assert state["daily_goal_growth_awarded"] == 60
+    assert state["event"] == "GOAL +10"
 
 print("pet growth tests: OK")

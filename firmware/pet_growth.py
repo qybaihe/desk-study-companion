@@ -9,7 +9,7 @@ except ImportError:
 class PetGrowthSystem:
     # Growth rewards.
     DEFAULT_DAILY_GOAL_SECONDS = 4 * 60 * 60
-    DAILY_GOAL_REWARD = 50
+    DAILY_GOAL_GROWTH_MAX = 60
     FIRST_FOCUS_SECONDS = 45 * 60
     FIRST_FOCUS_REWARD = 5
     EXTRA_FOCUS_SECONDS = 30 * 60
@@ -42,6 +42,7 @@ class PetGrowthSystem:
         self.daily_goal_seconds = self.DEFAULT_DAILY_GOAL_SECONDS
         self.day_key = ""
         self.daily_study_ms = 0
+        self.daily_goal_growth_awarded = 0
         self.daily_goal_awarded = False
         self.growth = 0
         self.stamina = 100
@@ -77,8 +78,21 @@ class PetGrowthSystem:
                 state = json.loads(state_file.read())
             self.day_key = str(state.get("day_key", ""))
             self.daily_study_ms = max(0, int(state.get("daily_study_ms", 0)))
-            self.daily_goal_awarded = bool(
-                state.get("daily_goal_awarded", False)
+            saved_daily_growth = state.get("daily_goal_growth_awarded")
+            if saved_daily_growth is None:
+                # v1 awarded 50 points only when the goal was completed.  A
+                # completed legacy day receives the remaining 10 points on
+                # its next update; an incomplete day catches up by progress.
+                saved_daily_growth = (
+                    50 if state.get("daily_goal_awarded", False) else 0
+                )
+            self.daily_goal_growth_awarded = max(
+                0,
+                min(self.DAILY_GOAL_GROWTH_MAX, int(saved_daily_growth)),
+            )
+            self.daily_goal_awarded = (
+                self.daily_goal_growth_awarded
+                >= self.DAILY_GOAL_GROWTH_MAX
             )
             self.growth = max(0, min(999, int(state.get("growth", 0))))
             self.stamina = max(0, min(100, int(state.get("stamina", 100))))
@@ -93,9 +107,10 @@ class PetGrowthSystem:
 
     def save(self):
         state = {
-            "version": 1,
+            "version": 2,
             "day_key": self.day_key,
             "daily_study_ms": self.daily_study_ms,
+            "daily_goal_growth_awarded": self.daily_goal_growth_awarded,
             "daily_goal_awarded": self.daily_goal_awarded,
             "growth": self.growth,
             "stamina": self.stamina,
@@ -171,15 +186,43 @@ class PetGrowthSystem:
         if not stored_number:
             self.day_key = current_day_key
             self.daily_study_ms = 0
+            self.daily_goal_growth_awarded = 0
             self.daily_goal_awarded = False
             return True
         if current_number > stored_number:
             self.day_key = current_day_key
             self.daily_study_ms = 0
+            self.daily_goal_growth_awarded = 0
             self.daily_goal_awarded = False
             return True
         # Ignore a clock that jumped backwards after an un-synchronised reboot.
         return False
+
+    def _daily_goal_growth_target(self):
+        goal_ms = max(1, self.daily_goal_seconds * 1000)
+        return min(
+            self.DAILY_GOAL_GROWTH_MAX,
+            self.daily_study_ms * self.DAILY_GOAL_GROWTH_MAX // goal_ms,
+        )
+
+    def _update_daily_goal_growth(self, events):
+        target = self._daily_goal_growth_target()
+        if target <= self.daily_goal_growth_awarded:
+            self.daily_goal_awarded = (
+                self.daily_goal_growth_awarded
+                >= self.DAILY_GOAL_GROWTH_MAX
+            )
+            return False
+
+        reward = target - self.daily_goal_growth_awarded
+        self.daily_goal_growth_awarded = target
+        self.daily_goal_awarded = target >= self.DAILY_GOAL_GROWTH_MAX
+        before = self.growth
+        self.growth = min(999, self.growth + reward)
+        actual_reward = self.growth - before
+        if actual_reward:
+            events.append("GOAL +%d" % actual_reward)
+        return True
 
     def _focus_milestone_count(self, session_seconds):
         if session_seconds < self.FIRST_FOCUS_SECONDS:
@@ -288,13 +331,7 @@ class PetGrowthSystem:
         if present:
             self.daily_study_ms += elapsed_ms
 
-        if (
-            not self.daily_goal_awarded
-            and self.daily_study_ms >= self.daily_goal_seconds * 1000
-        ):
-            self.daily_goal_awarded = True
-            self.growth = min(999, self.growth + self.DAILY_GOAL_REWARD)
-            events.append("GOAL +%d" % self.DAILY_GOAL_REWARD)
+        if self._update_daily_goal_growth(events):
             important_change = True
 
         if self._update_focus_rewards(present, session_seconds, events):
@@ -349,6 +386,8 @@ class PetGrowthSystem:
                 100, daily_seconds * 100 // self.daily_goal_seconds
             ),
             "daily_goal_awarded": self.daily_goal_awarded,
+            "daily_goal_growth_awarded": self.daily_goal_growth_awarded,
+            "daily_goal_growth_max": self.DAILY_GOAL_GROWTH_MAX,
             "growth": self.growth,
             "stage": current_stage,
             "visual_state": self.visual_state(),
