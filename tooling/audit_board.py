@@ -31,6 +31,7 @@ CANONICAL_NAMES = {
     "study_reminder.py": "study_reminder.py",
     "vl53l0x.py": "vl53l0x.py",
     "voice_qa_client.py": "voice_qa_client.py",
+    "voice_device_actions.py": "voice_device_actions.py",
 }
 
 CANONICAL_PATHS = {

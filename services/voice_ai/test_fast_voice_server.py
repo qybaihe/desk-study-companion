@@ -13,6 +13,7 @@ import time
 from pathlib import Path
 
 import learning_event_sink
+import local_fast_voice_server as voice_server_module
 from fast_voice_pipeline import limit_spoken_answer
 from local_fast_voice_server import (
     DiscoveryResponder,
@@ -39,6 +40,15 @@ def recv_server_header(client: socket.socket) -> tuple[bytes, dict]:
     while len(payload) < size:
         payload.extend(client.recv(size - len(payload)))
     return magic, json.loads(payload.decode("utf-8"))
+
+
+def recv_exact_client(client: socket.socket, size: int) -> bytes:
+    payload = bytearray()
+    while len(payload) < size:
+        chunk = client.recv(size - len(payload))
+        assert chunk
+        payload.extend(chunk)
+    return bytes(payload)
 
 
 load_dotenv(DEFAULT_ENV)
@@ -102,6 +112,76 @@ with tempfile.TemporaryDirectory() as temporary_directory:
     learning_event_sink.SPOOL_DIR = original_spool_dir
     learning_event_sink.SPOOL_PATH = original_spool_path
     learning_event_sink.tidb_store.configured = original_tidb_configured
+
+# A recognized settings command bypasses the general solver and returns one
+# authenticated, idempotent action in the normal voice-answer header.
+original_output_dir = voice_server_module.OUTPUT_DIR
+original_transcribe = voice_server_module.transcribe_audio
+original_solve = voice_server_module.solve_fast
+original_tts = voice_server_module.stream_tts_pcm
+original_publish = voice_server_module.publish_learning_event
+command_published = threading.Event()
+published_events = []
+with tempfile.TemporaryDirectory() as temporary_directory:
+    try:
+        voice_server_module.OUTPUT_DIR = Path(temporary_directory)
+        voice_server_module.transcribe_audio = lambda *args, **kwargs: (
+            "把每日学习目标设置为两个小时",
+            {"source": "offline-test"},
+            1,
+        )
+
+        def solver_must_not_run(*args, **kwargs):
+            raise AssertionError("general solver ran for a device command")
+
+        def fake_tts(_text, **kwargs):
+            kwargs["on_chunk"](b"\x00" * 6)
+            return {"sample_rate": 24_000}, 1, 1
+
+        def fake_publish(event):
+            published_events.append(event)
+            command_published.set()
+            return {"spooled": True}
+
+        voice_server_module.solve_fast = solver_must_not_run
+        voice_server_module.stream_tts_pcm = fake_tts
+        voice_server_module.publish_learning_event = fake_publish
+
+        command_client = socket.create_connection(server.server_address, timeout=2)
+        command_header = json.dumps(
+            {
+                "audio_bytes": 44,
+                "device_id": "offline-test",
+                "device_token": token,
+                "session_id": "session-command",
+            },
+            separators=(",", ":"),
+        ).encode("utf-8")
+        command_client.sendall(
+            b"VQW1"
+            + struct.pack(">I", len(command_header))
+            + command_header
+            + b"\x00" * 44
+        )
+        magic, payload = recv_server_header(command_client)
+        assert magic == b"VA01" and payload["ok"]
+        assert payload["device_action"]["type"] == "set_daily_goal_seconds"
+        assert payload["device_action"]["seconds"] == 7200
+        assert payload["device_action"]["id"].startswith("voice-command-")
+        while True:
+            frame_size = struct.unpack(">I", recv_exact_client(command_client, 4))[0]
+            if frame_size == 0:
+                break
+            recv_exact_client(command_client, frame_size)
+        command_client.close()
+        assert command_published.wait(2)
+        assert published_events[-1]["device_action"]["seconds"] == 7200
+    finally:
+        voice_server_module.OUTPUT_DIR = original_output_dir
+        voice_server_module.transcribe_audio = original_transcribe
+        voice_server_module.solve_fast = original_solve
+        voice_server_module.stream_tts_pcm = original_tts
+        voice_server_module.publish_learning_event = original_publish
 
 server.shutdown()
 server.server_close()

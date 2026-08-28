@@ -18,6 +18,7 @@ from pet_growth import PetGrowthSystem
 from st7789 import ST7789
 from study_reminder import LowLightReminder, OneShotStudyReminder
 from vl53l0x import VL53L0X
+from voice_device_actions import VoiceDeviceActionHandler
 from voice_qa_client import VoiceQAClient
 
 
@@ -431,6 +432,7 @@ voice_player = AudioManager(
     microphone_data_pin=2,
 )
 voice_qa = VoiceQAClient(voice_player, button_pulldown1)
+voice_action_handler = VoiceDeviceActionHandler(pet_system)
 voice_queue = []
 tof_error_count = 0
 temperature_c = None
@@ -454,6 +456,10 @@ while True:
     loop_now = time.ticks_ms()
     voice_player.update(loop_now)
     voice_qa.update(loop_now)
+    # The authenticated Mac service can attach a deterministic device action
+    # to a voice answer. Apply it while the response header is still resident;
+    # the handler de-duplicates the many cooperative loops during playback.
+    voice_action_handler.consume(getattr(voice_qa, "_response", None))
     discovered_rtc = voice_qa.take_beijing_rtc()
     if discovered_rtc is not None:
         try:
@@ -579,6 +585,9 @@ while True:
             "beijing_time": day_key + " " + beijing_time,
             "present": bool(presence["present"]),
             "study_seconds": study_seconds,
+            "daily_study_seconds": pet_system.daily_study_ms // 1000,
+            "daily_goal_seconds": pet_system.daily_goal_seconds,
+            "pet_growth": pet_system.growth,
             "distance_mm": distance_mm,
             "pir_motion": bool(motion),
             "light_1": v1,

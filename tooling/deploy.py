@@ -208,6 +208,7 @@ if __name__ == "__main__":
     upload("firmware/presence_tracker.py", "/presence_tracker.py")
     upload("firmware/pet_animation.py", "/pet_animation.py")
     upload("firmware/pet_growth.py", "/pet_growth.py")
+    upload("firmware/voice_device_actions.py", "/voice_device_actions.py")
     upload("firmware/study_reminder.py", "/study_reminder.py")
     upload("firmware/audio_manager.py", "/audio_manager.py")
     upload("firmware/voice_qa_client.py", "/voice_qa_client.py")
@@ -257,6 +258,7 @@ if __name__ == "__main__":
         "compile(open('/presence_tracker.py').read(), '/presence_tracker.py', 'exec');"
         "compile(open('/pet_animation.py').read(), '/pet_animation.py', 'exec');"
         "compile(open('/pet_growth.py').read(), '/pet_growth.py', 'exec');"
+        "compile(open('/voice_device_actions.py').read(), '/voice_device_actions.py', 'exec');"
         "compile(open('/study_reminder.py').read(), '/study_reminder.py', 'exec');"
         "compile(open('/audio_manager.py').read(), '/audio_manager.py', 'exec');"
         "compile(open('/voice_qa_client.py').read(), '/voice_qa_client.py', 'exec');"

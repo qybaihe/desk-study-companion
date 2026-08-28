@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from device_commands import match_device_command
 from fast_voice_pipeline import limit_spoken_answer, solve_fast, stream_tts_pcm
 from learning_event_sink import publish_learning_event
 from mimo_voice_qa import (
@@ -216,12 +217,26 @@ class VoiceRequestHandler(socketserver.BaseRequestHandler):
                 base_url=base_url,
                 model=asr_model,
             )
-            answer, solver_meta, solver_ms = solve_fast(
-                transcript,
-                api_key=api_key,
-                base_url=base_url,
-                model=solver_model,
-            )
+            command = match_device_command(transcript)
+            device_action = None
+            if command is not None:
+                answer = command["answer"]
+                device_action = command.get("device_action")
+                if device_action is not None:
+                    device_action = dict(device_action)
+                    device_action["id"] = "voice-command-" + stamp
+                solver_meta = {
+                    "source": "local_device_command",
+                    "command_error": command.get("command_error", ""),
+                }
+                solver_ms = 0
+            else:
+                answer, solver_meta, solver_ms = solve_fast(
+                    transcript,
+                    api_key=api_key,
+                    base_url=base_url,
+                    model=solver_model,
+                )
             answer["spoken_answer"] = limit_spoken_answer(
                 answer["spoken_answer"]
             )
@@ -239,6 +254,8 @@ class VoiceRequestHandler(socketserver.BaseRequestHandler):
                     "solver": solver_ms,
                 },
             }
+            if device_action is not None:
+                response_header["device_action"] = device_action
             send_header(connection, b"VA01", response_header)
             response_started = True
 
@@ -309,6 +326,7 @@ class VoiceRequestHandler(socketserver.BaseRequestHandler):
                 "answer_pcm": str(pcm_path.resolve()),
                 "transcript": transcript,
                 "answer": answer,
+                "device_action": device_action,
                 "latency_ms": {
                     "upload": upload_ms,
                     "asr": asr_ms,
@@ -335,6 +353,7 @@ class VoiceRequestHandler(socketserver.BaseRequestHandler):
                 "question": transcript,
                 "short_answer": answer["short_answer"],
                 "spoken_answer": answer["spoken_answer"],
+                "device_action": device_action,
                 "latency_ms": result["latency_ms"],
                 "telemetry": telemetry,
             }
