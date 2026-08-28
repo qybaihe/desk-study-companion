@@ -1,0 +1,33 @@
+# Private credentials and generated device configuration
+.env
+**/.env
+!**/.env.example
+services/voice_ai/generated/
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Voice/runtime data
+runtime/*
+!runtime/.gitkeep
+services/voice_ai/captures/
+services/voice_ai/outputs/
+services/voice_ai/tts/
+services/voice_ai/fast_outputs/
+services/voice_ai/lan_outputs/
+services/voice_ai/event_spool/
+services/voice_ai/server.log
+services/voice_ai/server.pid
+
+# Local board/generated artifacts
+*.raw32
+*.log
+.DS_Store
+.idea/
+.vscode/

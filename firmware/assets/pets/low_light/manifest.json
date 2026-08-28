@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "source": "assets/pets/low_light/source/low-light-sprite-sheet-v1.png",
+  "source_sha256": "6bb10500108c284a2be11b2634df61035d3891b689020a6ad7ba27d110211e90",
+  "canvas": [
+    136,
+    112
+  ],
+  "frames": 8,
+  "frame_duration_ms": 125,
+  "loop_duration_ms": 1000,
+  "accent_rgb": [
+    77,
+    215,
+    123
+  ],
+  "rgb565_pattern": "lcd/low_light_{0..7}.rgb565"
+}

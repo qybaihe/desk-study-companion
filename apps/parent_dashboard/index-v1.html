@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="桌面学习助手家长端本地演示页面" />
+  <title>伴学 · 家长端</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body data-theme="orange">
+  <!--
+    Assumptions:
+    1. 这是无后端的本地高保真原型，页面数据全部是明确标注的演示数据。
+    2. 默认采用橙白视觉，右上角可切换粉白视觉。
+    3. 信息结构直接对应六类能力：距离、光线、专注、问答、环境、复盘。
+    4. 后续真实接入时，只需把 app.js 中的 demoData 替换为 API/实时事件数据。
+  -->
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="主要导航">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">伴</div>
+        <div>
+          <strong>伴学</strong>
+          <span>家长端</span>
+        </div>
+      </div>
+
+      <nav class="main-nav">
+        <button class="nav-item active" data-page-target="overview">
+          <span class="nav-code">01</span>
+          <span>家庭概览</span>
+        </button>
+        <button class="nav-item" data-page-target="eyes">
+          <span class="nav-code">02</span>
+          <span>护眼距离</span>
+        </button>
+        <button class="nav-item" data-page-target="light">
+          <span class="nav-code">03</span>
+          <span>桌面光线</span>
+        </button>
+        <button class="nav-item" data-page-target="focus">
+          <span class="nav-code">04</span>
+          <span>专注学习</span>
+        </button>
+        <button class="nav-item" data-page-target="qa">
+          <span class="nav-code">05</span>
+          <span>提问辅导</span>
+        </button>
+        <button class="nav-item" data-page-target="environment">
+          <span class="nav-code">06</span>
+          <span>学习环境</span>
+        </button>
+        <button class="nav-item" data-page-target="report">
+          <span class="nav-code">07</span>
+          <span>学习复盘</span>
+        </button>
+      </nav>
+
+      <div class="device-card">
+        <div class="device-card-top">
+          <span class="live-dot"></span>
+          <span>桌面助手在线</span>
+        </div>
+        <strong>书房 · 设备 01</strong>
+        <small>刚刚同步</small>
+      </div>
+
+      <div class="sidebar-parent">
+        <span class="avatar avatar-parent">林</span>
+        <div>
+          <strong>林女士</strong>
+          <small>家庭管理员</small>
+        </div>
+        <button class="plain-icon" aria-label="打开家长菜单">•••</button>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu" aria-label="打开导航">菜单</button>
+        <div class="topbar-title">
+          <small>孩子的学习近况</small>
+          <h1 id="pageTitle">家庭概览</h1>
+        </div>
+
+        <div class="topbar-actions">
+          <div class="demo-badge"><span></span>本地演示 · 模拟数据</div>
+          <div class="child-switcher" role="group" aria-label="选择孩子">
+            <button class="child-option active" data-child="xiaoman">
+              <span class="avatar avatar-xiaoman">满</span>小满
+            </button>
+            <button class="child-option" data-child="lele">
+              <span class="avatar avatar-lele">乐</span>乐乐
+            </button>
+          </div>
+          <button class="theme-toggle" id="themeToggle" aria-label="切换橙白或粉白主题">
+            <span class="theme-swatch"></span>
+            <span id="themeLabel">橙白</span>
+          </button>
+          <button class="notification-button" id="notificationButton" aria-label="查看提醒">
+            <span class="notification-dot"></span>
+            提醒
+          </button>
+        </div>
+      </header>
+
+      <div class="toolbar">
+        <p id="contextLine">今天状态不错，光线调整后保持稳定。</p>
+        <div class="period-switcher" role="group" aria-label="时间范围">
+          <button class="period-option active" data-period="today">今天</button>
+          <button class="period-option" data-period="week">本周</button>
+          <button class="period-option" data-period="month">本月</button>
+        </div>
+      </div>
+
+      <section class="page active" data-page="overview">
+        <div class="overview-hero">
+          <div class="hero-copy">
+            <div class="eyebrow">今日学习状态</div>
+            <h2><span id="heroChildName">小满</span>正在专注学习，<br />目前一切顺利。</h2>
+            <p id="heroSummary">已连续专注 18 分钟，坐姿距离正常，桌面光线均匀。</p>
+            <div class="hero-actions">
+              <button class="primary-button" data-go-page="report">查看完整复盘</button>
+              <button class="text-button" id="sendEncouragement">发送一句鼓励</button>
+            </div>
+          </div>
+
+          <div class="live-scene" aria-label="孩子当前学习状态示意">
+            <div class="scene-head">
+              <span>实时状态</span>
+              <span class="live-label"><i></i>LIVE</span>
+            </div>
+            <div class="focus-clock">
+              <span>本轮专注</span>
+              <strong id="liveClock">18:24</strong>
+              <small>目标 25 分钟</small>
+            </div>
+            <div class="scene-status-grid">
+              <div><span class="status-symbol good">✓</span><p>坐姿距离</p><strong id="overviewDistance">36 cm</strong></div>
+              <div><span class="status-symbol good">✓</span><p>桌面光线</p><strong id="overviewLight">舒适</strong></div>
+              <div><span class="status-symbol good">✓</span><p>环境温度</p><strong id="overviewTemp">24.6°C</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="metric-strip">
+          <article class="metric-block">
+            <span class="metric-label">专注时间</span>
+            <strong id="metricFocus">52<small>分钟</small></strong>
+            <span class="metric-note positive" id="metricFocusNote">比昨日多 12 分钟</span>
+          </article>
+          <article class="metric-block">
+            <span class="metric-label">护眼表现</span>
+            <strong id="metricEye">92<small>分</small></strong>
+            <span class="metric-note">1 次距离提醒</span>
+          </article>
+          <article class="metric-block">
+            <span class="metric-label">有效学习轮次</span>
+            <strong id="metricRounds">3<small>轮</small></strong>
+            <span class="metric-note positive">完成率 100%</span>
+          </article>
+          <article class="metric-block">
+            <span class="metric-label">主动提问</span>
+            <strong id="metricQuestions">4<small>次</small></strong>
+            <span class="metric-note">数学问题最多</span>
+          </article>
+        </div>
+
+        <div class="dashboard-grid">
+          <article class="panel focus-trend-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">学习节奏</span>
+                <h3>近七天专注时间</h3>
+              </div>
+              <strong class="panel-number"><span id="weekTotal">286</span><small>分钟</small></strong>
+            </div>
+            <div class="bar-chart" id="focusChart" aria-label="近七天专注时间柱状图"></div>
+            <div class="chart-legend"><span><i class="legend-primary"></i>实际专注</span><span><i class="legend-soft"></i>每日目标 40 分钟</span></div>
+          </article>
+
+          <article class="panel insight-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">值得关注</span>
+                <h3>今天的三个发现</h3>
+              </div>
+              <span class="small-stamp">自动整理</span>
+            </div>
+            <div class="insight-list" id="insightList"></div>
+          </article>
+        </div>
+
+        <div class="six-capabilities">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">六项能力</span>
+              <h3>家长最关心的事，一屏看明白</h3>
+            </div>
+            <button class="text-button" data-go-page="report">查看周报 →</button>
+          </div>
+          <div class="capability-grid">
+            <button class="capability-item" data-go-page="eyes"><span>01</span><strong>护眼距离</strong><small>坐得近不近</small><b id="capEye">正常</b></button>
+            <button class="capability-item" data-go-page="light"><span>02</span><strong>桌面光线</strong><small>亮不亮、均不均</small><b id="capLight">舒适</b></button>
+            <button class="capability-item" data-go-page="focus"><span>03</span><strong>专注学习</strong><small>学了多久</small><b id="capFocus">52 分钟</b></button>
+            <button class="capability-item" data-go-page="qa"><span>04</span><strong>提问辅导</strong><small>问了什么</small><b id="capQA">4 个问题</b></button>
+            <button class="capability-item" data-go-page="environment"><span>05</span><strong>学习环境</strong><small>温湿度与安全</small><b id="capEnv">舒适</b></button>
+            <button class="capability-item" data-go-page="report"><span>06</span><strong>学习复盘</strong><small>进步在哪里</small><b>已生成</b></button>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" data-page="eyes">
+        <div class="section-intro">
+          <div><span class="eyebrow">功能 01</span><h2>坐得近不近，不用一直盯着孩子</h2><p>PIR 判断孩子是否在桌前，距离传感器持续检查坐姿距离，只有真正需要时才提醒。</p></div>
+          <div class="large-status good-status"><span>当前距离</span><strong id="eyeCurrentDistance">36 cm</strong><small>建议保持 33–45 cm</small></div>
+        </div>
+        <div class="dashboard-grid two-one">
+          <article class="panel">
+            <div class="panel-heading"><div><span class="eyebrow">距离变化</span><h3>今天的坐姿距离</h3></div><span class="status-pill good-pill">整体良好</span></div>
+            <div class="distance-track" id="distanceTrack"></div>
+          </article>
+          <article class="panel reminder-setting">
+            <span class="eyebrow">提醒设置</span>
+            <h3>温和提醒已开启</h3>
+            <p>连续 20 秒低于 30 cm 才提醒，避免孩子刚刚靠近看题时被打断。</p>
+            <label class="switch-row"><span><strong>距离提醒</strong><small>灯光 + 屏幕 + 语音</small></span><input type="checkbox" checked /><i></i></label>
+            <label class="switch-row"><span><strong>家长端通知</strong><small>连续出现 3 次时通知</small></span><input type="checkbox" checked /><i></i></label>
+          </article>
+        </div>
+        <article class="panel table-panel">
+          <div class="panel-heading"><div><span class="eyebrow">提醒记录</span><h3>今天发生过什么</h3></div><button class="plain-button">查看全部</button></div>
+          <div class="event-table" id="eyeEvents"></div>
+        </article>
+      </section>
+
+      <section class="page" data-page="light">
+        <div class="section-intro">
+          <div><span class="eyebrow">功能 02</span><h2>不只看亮不亮，还看左右均不均匀</h2><p>两个光敏传感器分别观察书桌左右两侧，帮助发现单侧强光、背光和整体过暗。</p></div>
+          <div class="large-status"><span>当前判断</span><strong id="lightCurrentState">光线舒适</strong><small id="lightCurrentDetail">左右差异 4%</small></div>
+        </div>
+        <div class="light-layout">
+          <article class="panel desk-light-card">
+            <div class="panel-heading"><div><span class="eyebrow">实时桌面</span><h3>左右光线对比</h3></div><span class="live-label"><i></i>LIVE</span></div>
+            <div class="desk-visual">
+              <div class="light-column left-light"><span>左侧</span><strong id="leftLightValue">612</strong><small>相对亮度</small><i id="leftLightFill"></i></div>
+              <div class="desk-center"><div class="book-shape"><span>学习区域</span><b>均匀</b></div></div>
+              <div class="light-column right-light"><span>右侧</span><strong id="rightLightValue">588</strong><small>相对亮度</small><i id="rightLightFill"></i></div>
+            </div>
+            <div class="ideal-band"><span>过暗</span><div><i></i><b id="lightMarker"></b></div><span>过亮</span></div>
+          </article>
+          <article class="recommendation-card">
+            <span class="recommendation-index">今日建议</span>
+            <h3>台灯位置很好，继续保持。</h3>
+            <p>16:10 曾出现左侧偏暗，调整后两边光线已经恢复均匀。</p>
+            <div class="recommendation-result"><span>调整前</span><strong>差异 21%</strong><i>→</i><span>调整后</span><strong>差异 4%</strong></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="page" data-page="focus">
+        <div class="section-intro">
+          <div><span class="eyebrow">功能 03</span><h2>记录真正坐在桌前的专注时间</h2><p>计时器结合人体感应自动判断离席，不把离开座位的时间算进专注时长。</p></div>
+          <div class="large-status"><span>今日累计</span><strong id="focusTotalLarge">52 分钟</strong><small id="focusRoundsLarge">完成 3 轮</small></div>
+        </div>
+        <div class="focus-layout">
+          <article class="focus-ring-card">
+            <div class="focus-ring" id="focusRing"><div><span>今日目标</span><strong id="focusPercent">74%</strong><small>52 / 70 分钟</small></div></div>
+            <div><span class="eyebrow">学习节奏</span><h3>节奏稳定，没有频繁离席</h3><p>最长连续专注 24 分钟，比过去 7 天平均水平多 6 分钟。</p></div>
+          </article>
+          <article class="panel session-list-panel">
+            <div class="panel-heading"><div><span class="eyebrow">今日轮次</span><h3>每一轮都学了什么</h3></div><button class="plain-button" id="addDemoSession">添加演示轮次</button></div>
+            <div class="session-list" id="sessionList"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="page" data-page="qa">
+        <div class="section-intro">
+          <div><span class="eyebrow">功能 04</span><h2>孩子问了什么，家长看到的是重点</h2><p>这里只展示问题主题和学习结果，不堆放冗长对话，让家长快速发现孩子卡在哪里。</p></div>
+          <div class="large-status"><span>今日提问</span><strong id="qaTotalLarge">4 个</strong><small>3 个已经理解</small></div>
+        </div>
+        <div class="qa-layout">
+          <article class="panel qa-list-panel">
+            <div class="panel-heading"><div><span class="eyebrow">提问记录</span><h3>今天的学习疑问</h3></div><span class="privacy-note">只显示学习摘要</span></div>
+            <div class="qa-list" id="qaList"></div>
+          </article>
+          <article class="subject-card">
+            <span class="eyebrow">问题分布</span>
+            <h3>数学是今天的主要难点</h3>
+            <div class="subject-bars" id="subjectBars"></div>
+            <p>建议明天先用 10 分钟复习分数应用题，再进入新内容。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="page" data-page="environment">
+        <div class="section-intro">
+          <div><span class="eyebrow">功能 05</span><h2>把容易被忽略的学习环境说清楚</h2><p>温度、湿度、光线和空气异常分别检测；涉及安全的情况由设备本地立即报警。</p></div>
+          <div class="large-status good-status"><span>当前环境</span><strong id="environmentState">舒适</strong><small>适合继续学习</small></div>
+        </div>
+        <div class="environment-grid">
+          <article class="environment-metric warm"><span>温度</span><strong id="envTemp">24.6<small>°C</small></strong><div class="mini-range"><i style="width:66%"></i></div><p>舒适范围内</p></article>
+          <article class="environment-metric peach"><span>湿度</span><strong id="envHumidity">48<small>%</small></strong><div class="mini-range"><i style="width:48%"></i></div><p>空气不干燥</p></article>
+          <article class="environment-metric cream"><span>空气状态</span><strong>正常</strong><div class="mini-range"><i style="width:22%"></i></div><p>未发现烟气异常</p></article>
+          <article class="environment-metric rose"><span>设备温度</span><strong>稳定</strong><div class="mini-range"><i style="width:38%"></i></div><p>没有过热迹象</p></article>
+        </div>
+        <article class="panel environment-log">
+          <div class="panel-heading"><div><span class="eyebrow">环境时间线</span><h3>今天的变化</h3></div><span class="small-stamp">4 项传感器</span></div>
+          <div class="timeline-list" id="environmentTimeline"></div>
+        </article>
+      </section>
+
+      <section class="page" data-page="report">
+        <div class="report-header">
+          <div><span class="eyebrow">功能 06 · 本周复盘</span><h2><span id="reportChildName">小满</span>正在形成稳定的学习节奏。</h2><p>数据来自桌面助手的本地事件汇总；以下均为演示内容。</p></div>
+          <button class="primary-button" id="exportReport">导出本周报告</button>
+        </div>
+        <div class="report-score-row">
+          <article class="score-card"><span>综合表现</span><strong id="reportScore">88</strong><small>比上周 +6</small></article>
+          <article class="report-summary"><span class="eyebrow">一句话总结</span><h3>专注时间增长明显，坐姿提醒减少；下一步重点是巩固数学应用题。</h3></article>
+        </div>
+        <div class="report-grid">
+          <article class="panel">
+            <div class="panel-heading"><div><span class="eyebrow">五项表现</span><h3>进步在哪里</h3></div></div>
+            <div class="dimension-list" id="dimensionList"></div>
+          </article>
+          <article class="panel milestones-panel">
+            <div class="panel-heading"><div><span class="eyebrow">本周里程碑</span><h3>值得肯定的三件事</h3></div></div>
+            <div class="milestone-list" id="milestoneList"></div>
+          </article>
+        </div>
+        <article class="next-week-plan">
+          <div><span class="eyebrow">下周建议</span><h3>保持 25 分钟专注节奏，把数学复习放在精力最好的第一轮。</h3></div>
+          <div class="plan-actions"><span>每天 2–3 轮</span><span>数学先学 10 分钟</span><span>晚间减少强光</span></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="mobile-backdrop" id="mobileBackdrop"></div>
+  <script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+* text=auto
+
+*.py text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+Makefile text eol=lf
+
+*.bin binary
+*.gif binary
+*.jpg binary
+*.jpeg binary
+*.mono binary
+*.mp3 binary
+*.pcm binary
+*.png binary
+*.rgb565 binary
+*.wav binary

@@ -1,0 +1,135 @@
+{
+  "audited_at": "2026-08-28T13:37:05+08:00",
+  "source": "ESP32-S3 root filesystem",
+  "secret_files_excluded": [
+    "/voice_qa_config.py"
+  ],
+  "files": [
+    {
+      "path": "/audio_manager.py",
+      "size": 9102,
+      "crc32": "128df532",
+      "captured": true,
+      "canonical": "firmware/audio_manager.py",
+      "matches_canonical": true
+    },
+    {
+      "path": "/boot.py",
+      "size": 139,
+      "crc32": "523e6a0f",
+      "captured": true,
+      "canonical": "firmware/boot.py",
+      "matches_canonical": true
+    },
+    {
+      "path": "/fusion_tracker.py",
+      "size": 7663,
+      "crc32": "1e20ecbf",
+      "captured": true,
+      "canonical": "firmware/fusion_tracker.py",
+      "matches_canonical": true
+    },
+    {
+      "path": "/main.py",
+      "size": 28574,
+      "crc32": "8ce6d660",
+      "captured": true,
+      "canonical": "firmware/main.py",
+      "matches_canonical": true
+    },
+    {
+      "path": "/mic_button_test.py",
+      "size": 7660,
+      "crc32": "2ee5f13d",
+      "captured": true,
+      "canonical": "firmware/diagnostics/deployed/mic_button_test.py",
+      "matches_canonical": true
+    },
+    {
+      "path": "/mic_capture_io10.py",
+      "size": 5688,
+      "crc32": "f5951196",
+      "captured": true,
+      "canonical": "firmware/diagnostics/mic_capture_io10.py",
+      "matches_canonical": true
+    },
+    {
+      "path": "/pet_animation.py",
+      "size": 4861,
+      "crc32": "295b1674",
+      "captured": true,
+      "canonical": "firmware/pet_animation.py",
+      "matches_canonical": true
+    },
+    {
+      "path": "/pet_growth.py",
+      "size": 12550,
+      "crc32": "171d8dbc",
+      "captured": true,
+      "canonical": "firmware/pet_growth.py",
+      "matches_canonical": true
+    },
+    {
+      "path": "/presence_tracker.py",
+      "size": 2499,
+      "crc32": "621748fb",
+      "captured": true,
+      "canonical": "firmware/presence_tracker.py",
+      "matches_canonical": true
+    },
+    {
+      "path": "/speaker_prompt.py",
+      "size": 3644,
+      "crc32": "b3576aeb",
+      "captured": true,
+      "canonical": "firmware/speaker_prompt.py",
+      "matches_canonical": true
+    },
+    {
+      "path": "/st7789.py",
+      "size": 2142,
+      "crc32": "73558f44",
+      "captured": true,
+      "canonical": "firmware/st7789.py",
+      "matches_canonical": true
+    },
+    {
+      "path": "/study_reminder.py",
+      "size": 3777,
+      "crc32": "79da91ae",
+      "captured": true,
+      "canonical": "firmware/study_reminder.py",
+      "matches_canonical": true
+    },
+    {
+      "path": "/vl53l0x.py",
+      "size": 25764,
+      "crc32": "2c862f3e",
+      "captured": true,
+      "canonical": "firmware/vl53l0x.py",
+      "matches_canonical": true
+    },
+    {
+      "path": "/voice_qa_client.py",
+      "size": 28071,
+      "crc32": "8a14eb1d",
+      "captured": true,
+      "canonical": "firmware/voice_qa_client.py",
+      "matches_canonical": true
+    },
+    {
+      "path": "/voice_qa_config.py",
+      "size": 246,
+      "crc32": "aebc1045",
+      "captured": false
+    },
+    {
+      "path": "/voice_qa_mic_once.py",
+      "size": 5388,
+      "crc32": "0a67b2bf",
+      "captured": true,
+      "canonical": "firmware/diagnostics/voice_qa_mic_once.py",
+      "matches_canonical": true
+    }
+  ]
+}

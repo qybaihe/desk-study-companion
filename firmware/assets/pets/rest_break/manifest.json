@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "source": "assets/pets/rest_break/source/rest-break-sprite-sheet-v1.png",
+  "source_sha256": "072c25dc517e47e59cfc2f969b4654ac57c07c4b271005bd0906a2029ae456c2",
+  "canvas": [
+    136,
+    112
+  ],
+  "frames": 8,
+  "frame_duration_ms": 125,
+  "loop_duration_ms": 1000,
+  "accent_rgb": [
+    228,
+    30,
+    45
+  ],
+  "rgb565_pattern": "lcd/rest_break_{0..7}.rgb565"
+}

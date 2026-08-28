@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="伴学家长端" />
+  <title>伴学 · 家长端</title>
+  <link rel="icon" type="image/png" href="./assets/pet/favicon.png?v=5" />
+  <link rel="apple-touch-icon" href="./assets/pet/app-icon.png?v=5" />
+  <link rel="stylesheet" href="./styles.css?v=8" />
+</head>
+<body data-theme="orange">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark"><img src="./assets/pet/pet-green.png?v=5" alt="伴学桌面宠物" /></span><div><strong>伴学</strong><small>家长端</small></div></div>
+      <div class="greeting"><strong>晚上好，林女士</strong><span>孩子今天状态不错</span></div>
+      <nav>
+        <button class="nav-item active" data-page-target="overview"><img src="./assets/pet/pet-pink.png?v=5" alt="" aria-hidden="true" /><span>总览</span></button>
+        <button class="nav-item" data-page-target="eyes"><img src="./assets/pet/pet-green.png?v=5" alt="" aria-hidden="true" /><span>护眼</span></button>
+        <button class="nav-item" data-page-target="study"><img src="./assets/pet/pet-red.png?v=5" alt="" aria-hidden="true" /><span>学习状态</span></button>
+        <button class="nav-item" data-page-target="qa"><img src="./assets/pet/pet-pink.png?v=5" alt="" aria-hidden="true" /><span>提问</span></button>
+        <button class="nav-item" data-page-target="environment"><img src="./assets/pet/pet-green.png?v=5" alt="" aria-hidden="true" /><span>环境</span></button>
+      </nav>
+      <div class="side-illustration"><img id="sidebarIllustration" src="./assets/illustrations/overview-family-girl.png" alt="家长查看孩子学习状态的插画" /></div>
+      <div class="device-status"><img class="device-pet" id="devicePet" src="./assets/pet/pet-green.png?v=5" alt="小羊在线" /><div><strong>小羊在线</strong><small>刚刚同步</small></div></div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu">菜单</button>
+        <div class="page-heading"><small>学习近况</small><h1 id="pageTitle">总览</h1></div>
+        <div class="top-actions">
+          <span class="demo-badge">演示数据</span>
+          <button class="pet-control" id="petControl" aria-label="查看桌面宠物状态">
+            <span><small>伴学小羊</small><strong id="petStatusText">陪伴中</strong></span>
+            <img id="petAvatar" src="./assets/pet/pet-pink.png?v=5" alt="伴学小羊" />
+          </button>
+          <div class="child-switcher">
+            <button class="child active" data-child="xiaoman">小满</button>
+            <button class="child" data-child="lele">乐乐</button>
+          </div>
+          <div class="period-switcher">
+            <button class="period active" data-period="today">今天</button>
+            <button class="period" data-period="week">本周</button>
+            <button class="period" data-period="month">本月</button>
+          </div>
+          <button class="theme-button" id="themeButton"><i></i><span>杏白</span></button>
+        </div>
+      </header>
+
+      <div class="page-stage">
+        <section class="page active" data-page="overview">
+          <div class="overview-title">
+            <div><span class="eyebrow">OVERVIEW</span><h2><b id="overviewName">小满</b>今天学得怎么样？</h2></div>
+            <span class="live-pill"><i></i>学习中</span>
+          </div>
+          <div class="metric-grid">
+            <article class="metric-card orange-card"><span>专注</span><strong id="overviewFocus">52<small>分钟</small></strong><div class="spark-bars" id="miniFocusBars"></div></article>
+            <article class="metric-card"><span>护眼</span><strong id="overviewEye">92<small>分</small></strong><div class="mini-line"><i></i><b></b></div></article>
+            <article class="metric-card"><span>提问</span><strong id="overviewQuestions">4<small>个</small></strong><div class="dot-row"><i></i><i></i><i></i><i></i></div></article>
+            <article class="metric-card"><span>环境</span><strong id="overviewEnvironment">舒适</strong><div class="comfort-badge">温度与空气正常</div></article>
+          </div>
+          <div class="overview-bottom">
+            <article class="panel focus-panel">
+              <div class="panel-head"><div><span>近七天</span><h3>专注时间</h3></div><strong id="weekFocus">286<small>分钟</small></strong></div>
+              <div class="week-chart" id="weekChart"></div>
+            </article>
+            <article class="panel live-panel">
+              <div class="live-copy"><span>本轮专注</span><strong id="overviewClock">18:24</strong><div><b id="overviewDistance">36 cm</b><b id="overviewLight">光线舒适</b></div></div>
+              <img id="overviewIllustration" src="./assets/illustrations/overview-family-girl.png" alt="家长与孩子学习插画" />
+            </article>
+          </div>
+        </section>
+
+        <section class="page feature-page" data-page="eyes">
+          <div class="feature-hero peach-hero">
+            <div class="feature-copy"><span class="eyebrow">EYE CARE</span><h2>护眼</h2><div class="feature-number"><strong id="eyeDistance">36</strong><span>cm</span></div><p>建议 33–45 cm</p></div>
+            <img id="eyeIllustration" src="./assets/illustrations/eye-distance-sheep.png?v=8" alt="小羊桌宠进行坐姿距离检测的插画" />
+          </div>
+          <div class="feature-grid three-columns">
+            <article class="panel distance-panel"><div class="panel-head"><div><span>当前距离</span><h3 id="eyeStatus">正常</h3></div><strong id="eyeScore">92<small>分</small></strong></div><div class="distance-scale"><i></i><b id="distanceMarker"></b></div><div class="scale-label"><span>过近</span><span>舒适</span><span>过远</span></div></article>
+            <article class="panel reminder-panel"><div class="panel-head"><div><span>今日提醒</span><h3 id="reminderCount">1 次</h3></div><span class="good-text">已改善</span></div><div class="event-compact"><b>16:32</b><span id="reminderText">提醒后恢复正常</span></div><div class="alert-bars" id="alertBars"></div></article>
+            <article class="panel switches"><div class="eye-ring" id="eyeRing"><strong id="eyeRingValue">92</strong><span>护眼</span></div><label><span>距离提醒</span><input type="checkbox" checked><i></i></label><label><span>家长通知</span><input type="checkbox" checked><i></i></label></article>
+          </div>
+        </section>
+
+        <section class="page feature-page" data-page="study">
+          <div class="feature-hero yellow-hero">
+            <div class="feature-copy"><span class="eyebrow">STUDY</span><h2>学习状态</h2><div class="feature-number"><strong id="studyFocus">52</strong><span>分钟</span></div><p><b id="studyRounds">3</b> 轮 · 周报 <b id="studyReport">88</b></p></div>
+            <img id="studyIllustration" src="./assets/illustrations/study-focus.png" alt="孩子专注学习插画" />
+          </div>
+          <div class="feature-grid study-columns">
+            <article class="panel focus-panel"><div class="panel-head"><div><span>专注</span><h3>近七天</h3></div><strong id="studyLongest">最长 24 分钟</strong></div><div class="week-chart compact-chart" id="studyChart"></div></article>
+            <article class="panel light-panel"><div class="panel-head"><div><span>光线</span><h3 id="studyLightState">舒适</h3></div><strong id="lightDifference">差异 4%</strong></div><div class="light-balance"><div><span>左</span><b id="leftLight">612</b></div><i><b id="lightMarker"></b></i><div><span>右</span><b id="rightLight">588</b></div></div></article>
+            <article class="panel report-panel"><div class="report-big"><span>周报</span><strong id="reportScore">88</strong></div><div class="report-bars" id="reportBars"></div><button id="exportButton">导出</button></article>
+          </div>
+        </section>
+
+        <section class="page feature-page" data-page="qa">
+          <div class="feature-hero pink-hero">
+            <div class="feature-copy"><span class="eyebrow">QUESTIONS</span><h2>提问</h2><div class="feature-number"><strong id="questionCount">4</strong><span>个</span></div><p>数学问题最多</p></div>
+            <img id="qaIllustration" src="./assets/illustrations/questions-sheep.png?v=8" alt="孩子向小羊桌宠提问的插画" />
+          </div>
+          <div class="qa-layout">
+            <article class="panel qa-panel"><div class="panel-head"><div><span>今日问题</span><h3>学习摘要</h3></div></div><div class="qa-list" id="qaList"></div></article>
+            <article class="panel subject-panel"><div class="subject-top"><div><span>问题分布</span><h3 id="topSubject">数学 75%</h3></div><div class="subject-donut" id="subjectDonut"><strong id="subjectDonutValue">75</strong></div></div><div class="subject-bars" id="subjectBars"></div></article>
+          </div>
+        </section>
+
+        <section class="page feature-page" data-page="environment">
+          <div class="feature-hero mint-hero">
+            <div class="feature-copy"><span class="eyebrow">ENVIRONMENT</span><h2>环境</h2><div class="feature-number text-number"><strong>舒适</strong></div><p>适合继续学习</p></div>
+            <img id="environmentIllustration" src="./assets/illustrations/environment-sheep.png?v=8" alt="小羊桌宠陪伴的舒适学习环境插画" />
+          </div>
+          <div class="environment-grid">
+            <article class="environment-card warm"><span>温度</span><strong id="temperature">24.6<small>°C</small></strong><div class="micro-bars"><i style="height:36%"></i><i style="height:52%"></i><i style="height:48%"></i><i style="height:62%"></i><i style="height:58%"></i></div><b>舒适</b></article>
+            <article class="environment-card rose"><span>湿度</span><strong id="humidity">48<small>%</small></strong><div class="micro-line"><i></i><b></b><em></em></div><b>正常</b></article>
+            <article class="environment-card yellow"><span>空气</span><strong>正常</strong><div class="air-dots"><i></i><i></i><i></i><i></i><i></i></div><b>无异常</b></article>
+            <article class="environment-card mint"><span>设备</span><strong>稳定</strong><div class="device-ring"><i></i><span>98%</span></div><b>在线</b></article>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <div class="backdrop" id="backdrop"></div>
+  <div class="toast" id="toast"></div>
+  <script src="./app.js?v=8"></script>
+</body>
+</html>

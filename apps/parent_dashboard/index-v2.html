@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="伴学家长端" />
+  <title>伴学 · 家长端</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body data-theme="orange">
+  <aside class="sidebar">
+    <div class="brand"><span>伴</span><div><strong>伴学</strong><small>家长端</small></div></div>
+    <nav>
+      <button class="nav active" data-scroll="top"><b>01</b>总览</button>
+      <button class="nav" data-scroll="eyes"><b>02</b>护眼</button>
+      <button class="nav" data-scroll="study"><b>03</b>学习状态</button>
+      <button class="nav" data-scroll="qa"><b>04</b>提问</button>
+      <button class="nav" data-scroll="environment"><b>05</b>环境</button>
+    </nav>
+    <div class="device"><i></i><span>书房设备在线</span><small>刚刚同步</small></div>
+    <div class="parent"><span>林</span><div><strong>林女士</strong><small>家庭管理员</small></div></div>
+  </aside>
+
+  <main id="top">
+    <header>
+      <button class="menu" id="menuButton">菜单</button>
+      <div><small>学习近况</small><h1>家庭总览</h1></div>
+      <div class="header-actions">
+        <span class="demo">演示数据</span>
+        <div class="children">
+          <button class="child active" data-child="xiaoman">小满</button>
+          <button class="child" data-child="lele">乐乐</button>
+        </div>
+        <div class="periods">
+          <button class="period active" data-period="today">今天</button>
+          <button class="period" data-period="week">本周</button>
+          <button class="period" data-period="month">本月</button>
+        </div>
+        <button class="theme" id="themeButton"><i></i><span>橙白</span></button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow" id="heroDate">今日学习</span>
+        <h2><b id="childName">小满</b>专注了<br><strong id="heroFocus">52</strong><em>分钟</em></h2>
+        <div class="hero-pills">
+          <span>护眼 <b id="heroEye">92</b></span>
+          <span>周报 <b id="heroReport">88</b></span>
+        </div>
+      </div>
+      <div class="live-card">
+        <div class="live-head"><span><i></i>学习中</span><small>目标 25 分钟</small></div>
+        <strong id="liveClock">18:24</strong>
+        <div class="live-grid">
+          <div><span>距离</span><b id="liveDistance">36 cm</b></div>
+          <div><span>光线</span><b id="liveLight">舒适</b></div>
+          <div><span>温度</span><b id="liveTemp">24.6°C</b></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="quick-stats">
+      <div><span>专注</span><strong id="quickFocus">52 分钟</strong></div>
+      <div><span>距离</span><strong id="quickDistance">36 cm</strong></div>
+      <div><span>提问</span><strong id="quickQuestions">4 个</strong></div>
+      <div><span>环境</span><strong id="quickEnvironment">舒适</strong></div>
+    </section>
+
+    <section class="content-section" id="eyes">
+      <div class="section-title"><div><span>01</span><h2>护眼</h2></div><strong id="eyeStatus">正常</strong></div>
+      <div class="eye-grid">
+        <article class="distance-card">
+          <span>当前距离</span><strong id="distanceValue">36<small>cm</small></strong>
+          <div class="distance-scale"><i></i><b id="distanceMarker"></b></div>
+          <div class="scale-label"><span>过近</span><span>33–45 cm</span><span>过远</span></div>
+        </article>
+        <article class="simple-card">
+          <span>今日提醒</span><strong id="reminderCount">1<small>次</small></strong>
+          <p id="reminderText">16:32 提醒，已调整</p>
+        </article>
+        <article class="switch-card">
+          <div><span>距离提醒</span><label><input type="checkbox" checked><i></i></label></div>
+          <div><span>家长通知</span><label><input type="checkbox" checked><i></i></label></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="content-section" id="study">
+      <div class="section-title"><div><span>02</span><h2>学习状态</h2></div><strong id="studyStatus">稳定</strong></div>
+      <div class="study-grid">
+        <article class="focus-card">
+          <div class="card-head"><span>专注</span><strong id="focusTotal">52 分钟</strong></div>
+          <div class="bars" id="focusBars"></div>
+          <div class="card-foot"><span id="roundCount">3 轮</span><span id="longestFocus">最长 24 分钟</span></div>
+        </article>
+        <article class="light-card">
+          <div class="card-head"><span>光线</span><strong id="lightState">舒适</strong></div>
+          <div class="light-values"><div><span>左</span><b id="leftLight">612</b></div><i><b id="lightBalance"></b></i><div><span>右</span><b id="rightLight">588</b></div></div>
+          <div class="card-foot"><span>左右差异</span><strong id="lightDifference">4%</strong></div>
+        </article>
+        <article class="report-card">
+          <div class="report-score"><span>周报</span><strong id="reportScore">88</strong></div>
+          <div class="report-lines" id="reportLines"></div>
+          <button id="exportButton">导出</button>
+        </article>
+      </div>
+    </section>
+
+    <section class="content-section" id="qa">
+      <div class="section-title"><div><span>03</span><h2>提问</h2></div><strong id="qaCount">4 个</strong></div>
+      <div class="qa-list" id="qaList"></div>
+    </section>
+
+    <section class="content-section" id="environment">
+      <div class="section-title"><div><span>04</span><h2>环境</h2></div><strong>舒适</strong></div>
+      <div class="environment-grid">
+        <article><span>温度</span><strong id="temperature">24.6<small>°C</small></strong></article>
+        <article><span>湿度</span><strong id="humidity">48<small>%</small></strong></article>
+        <article><span>空气</span><strong>正常</strong></article>
+        <article><span>设备</span><strong>稳定</strong></article>
+      </div>
+    </section>
+
+    <footer><span>伴学 · 家长端</span><span>本地演示</span></footer>
+  </main>
+
+  <div class="backdrop" id="backdrop"></div>
+  <div class="toast" id="toast"></div>
+  <script src="./app.js"></script>
+</body>
+</html>

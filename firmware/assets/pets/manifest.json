@@ -1,0 +1,67 @@
+{
+  "asset_set": "desk_companion_pet_v1",
+  "masters_are_immutable": true,
+  "frame_alignment": "normalized files share a 512x512 canvas",
+  "pets": [
+    {
+      "id": 1,
+      "pose": "idle",
+      "master": "originals/pet_01_idle.png",
+      "normalized": "normalized/pet_01_idle.png",
+      "master_size": [
+        2048,
+        2048
+      ],
+      "normalized_size": [
+        512,
+        512
+      ],
+      "sha256": "dfecb3ff0ef75da5eca9a638f16145b35df2ee849bf9ad14a206c39b9fe293a2"
+    },
+    {
+      "id": 2,
+      "pose": "clover",
+      "master": "originals/pet_02_clover.png",
+      "normalized": "normalized/pet_02_clover.png",
+      "master_size": [
+        2048,
+        2048
+      ],
+      "normalized_size": [
+        512,
+        512
+      ],
+      "sha256": "548bd49bf116d0b356f8daa4e775d6f45b623eaf0f0d25547775750ec4855447"
+    },
+    {
+      "id": 3,
+      "pose": "red_flower",
+      "master": "originals/pet_03_red_flower.png",
+      "normalized": "normalized/pet_03_red_flower.png",
+      "master_size": [
+        2048,
+        2048
+      ],
+      "normalized_size": [
+        512,
+        512
+      ],
+      "sha256": "d3e1196cbdd066e23f8351a7ea7138c89bac031208bde722f48758366e17d5bd"
+    },
+    {
+      "id": 4,
+      "pose": "blush",
+      "master": "originals/pet_04_blush.png",
+      "normalized": "normalized/pet_04_blush.png",
+      "master_size": [
+        2048,
+        2048
+      ],
+      "normalized_size": [
+        512,
+        512
+      ],
+      "sha256": "c3a7926a0c6ee63aae0e6fe7c37b6eb837eba66db3be0ed3dc0f65602b8a8c37"
+    }
+  ]
+}
