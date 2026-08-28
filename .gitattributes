@@ -19,3 +19,4 @@ Makefile text eol=lf
 *.png binary
 *.rgb565 binary
 *.wav binary
+*.zip binary

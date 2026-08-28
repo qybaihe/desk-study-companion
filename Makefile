@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: help test compile config deploy audit server dashboard assets tidb-schema tidb-sync
+.PHONY: help test compile config deploy audit server dashboard assets transparent-assets tidb-schema tidb-sync
 
 help:
 	@printf '%s\n' \
@@ -11,6 +11,7 @@ help:
 	  'make audit      - read and compare all Python files on the board' \
 	  'make server     - run the Mac LAN voice service' \
 	  'make dashboard  - serve the parent dashboard on port 4173' \
+	  'make transparent-assets - build the verified transparent sheep archive' \
 	  'make tidb-schema - create the TiDB behaviour/code tables' \
 	  'make tidb-sync  - snapshot tracked code and asset metadata to TiDB'
 
@@ -44,6 +45,9 @@ assets:
 	@$(PYTHON) tooling/asset_builders/build_pet_v2_animation.py
 	@$(PYTHON) tooling/asset_builders/build_low_light_animation.py
 	@$(PYTHON) tooling/asset_builders/build_rest_break_animation.py
+
+transparent-assets:
+	@$(PYTHON) tooling/build_transparent_pet_archive.py
 
 tidb-schema:
 	@PYTHONPATH=services/voice_ai $(PYTHON) -c "from mimo_voice_qa import DEFAULT_ENV,load_dotenv;load_dotenv(DEFAULT_ENV);from tidb_store import ensure_schema;ensure_schema();print('TiDB schema: OK')"

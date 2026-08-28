@@ -60,6 +60,7 @@ make PYTHON=.venv/bin/python deploy     # 烧写/更新开发板文件
 make PYTHON=.venv/bin/python audit      # 重读板上源码并检查一致性
 make PYTHON=.venv/bin/python server     # 启动Mac语音服务
 make PYTHON=.venv/bin/python dashboard  # 家长端 http://127.0.0.1:4173
+make PYTHON=.venv/bin/python transparent-assets # 构建透明背景羊素材包
 make PYTHON=.venv/bin/python tidb-schema # 初始化TiDB数据表
 make PYTHON=.venv/bin/python tidb-sync   # 同步源码快照和素材清单
 ```
@@ -69,6 +70,14 @@ make PYTHON=.venv/bin/python tidb-sync   # 同步源码快照和素材清单
 ```bash
 make PYTHON=../.venv/bin/python test
 ```
+
+## 透明背景宠物羊素材包
+
+下载 [`lulu-sheep-transparent-assets-v1.zip`](releases/lulu-sheep-transparent-assets-v1.zip)。
+压缩包收录 `firmware/assets/pets` 中全部223张PNG和10个GIF，共337帧；所有帧均已
+验证四角透明。转换只移除与画布边缘连通的背景，不删除羊脸、耳朵和眼睛中的
+黑色细节。校验文件见
+[`lulu-sheep-transparent-assets-v1.zip.sha256`](releases/lulu-sheep-transparent-assets-v1.zip.sha256)。
 
 ## 硬件关键引脚
 
