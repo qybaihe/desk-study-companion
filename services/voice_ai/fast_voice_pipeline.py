@@ -32,7 +32,7 @@ from mimo_voice_qa import (
 
 ROOT = Path(__file__).resolve().parent
 FAST_OUTPUT_DIR = ROOT / "fast_outputs"
-MAX_SPOKEN_CHARACTERS = 100
+MAX_SPOKEN_CHARACTERS = 48
 
 
 def limit_spoken_answer(text: str, limit: int = MAX_SPOKEN_CHARACTERS) -> str:
@@ -42,7 +42,7 @@ def limit_spoken_answer(text: str, limit: int = MAX_SPOKEN_CHARACTERS) -> str:
         return normalized
     candidate = normalized[:limit]
     cut = max(candidate.rfind(mark) for mark in "。！？；")
-    if cut >= 35:
+    if cut >= max(12, limit // 2):
         return candidate[: cut + 1]
     return candidate[: limit - 1].rstrip("，,；;：:。.!！?") + "。"
 
@@ -79,10 +79,11 @@ def solve_fast(
         "你是书桌学习伴侣里的儿童答疑老师。输入来自中文语音识别。"
         "先在内部核对题意、数字、单位和计算，然后直接给适合儿童听的准确答案。"
         "普通题最多用两句话：第一句先说最终答案，第二句只讲关键解释。"
+        "复杂题仍要先算准确，但朗读时只说结论和一个关键步骤。"
         "如果题目信息缺失或明显没有听清，needs_repeat为true，并请孩子简短重说。"
         "只返回JSON对象，严格包含三个字段："
         "needs_repeat（布尔值）、short_answer（简短结论）、"
-        "spoken_answer（可直接朗读、无Markdown、必须控制在80到100个汉字以内）。"
+        "spoken_answer（可直接朗读、无Markdown、控制在20到45个汉字）。"
     )
     payload = {
         "model": model,

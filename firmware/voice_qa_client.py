@@ -36,24 +36,21 @@ def _safe_remove(path):
         pass
 
 
-def _write_wav_header(target, data_size, sample_rate=16_000):
-    target.write(b"RIFF")
-    target.write(struct.pack("<I", 36 + data_size))
-    target.write(b"WAVEfmt ")
-    target.write(
-        struct.pack(
-            "<IHHIIHH",
-            16,
-            1,
-            1,
-            sample_rate,
-            sample_rate * 2,
-            2,
-            16,
+def _wav_header(data_size, sample_rate=16_000):
+    return (
+        b"RIFF"
+        + struct.pack("<I", 36 + data_size)
+        + b"WAVEfmt "
+        + struct.pack(
+            "<IHHIIHH", 16, 1, 1, sample_rate, sample_rate * 2, 2, 16
         )
+        + b"data"
+        + struct.pack("<I", data_size)
     )
-    target.write(b"data")
-    target.write(struct.pack("<I", data_size))
+
+
+def _write_wav_header(target, data_size, sample_rate=16_000):
+    target.write(_wav_header(data_size, sample_rate))
 
 
 class VoiceQAClient:
@@ -74,9 +71,15 @@ class VoiceQAClient:
     SAMPLE_RATE = 16_000
     MIN_RECORD_MS = 250
     MAX_RECORD_MS = 20_000
+    MAX_RAW_BYTES = SAMPLE_RATE * 4 * MAX_RECORD_MS // 1_000
+    PROCESS_BLOCK_BYTES = 16_384
+    UPLOAD_CHUNK_BYTES = 16_384
     BUTTON_DEBOUNCE_MS = 40
-    PLAYBACK_PREBUFFER_MS = 2_000
-    MAX_PLAYBACK_PREBUFFER_BYTES = 131_072
+    PLAYBACK_PREBUFFER_MS = 500
+    MAX_PLAYBACK_PREBUFFER_BYTES = 32_768
+    PLAYBACK_DRAIN_MS = 2_300
+    PLAYBACK_STALL_MS = 10_000
+    SERVER_RESPONSE_TIMEOUT_MS = 45_000
     TELEMETRY_HEARTBEAT_MS = 60_000
     TELEMETRY_RETRY_MS = 10_000
 
@@ -122,18 +125,19 @@ class VoiceQAClient:
         self._released_at = None
         self._discard_blocks = 0
         self._raw_file = None
+        self._raw_recording = None
+        self._raw_recorded_bytes = 0
         self._sample_count = 0
         self._sample_sum = 0
         self._minimum = 2_147_483_647
         self._maximum = -2_147_483_648
 
-        self._process_source = None
-        self._process_target = None
-        self._process_input = None
-        self._process_output = None
         self._process_mean = 0
         self._process_peak = 1
+        self._process_scale_q20 = 1
+        self._process_offset = 0
         self._converted = 0
+        self._wav_buffer = None
         self._wav_bytes = 0
 
         self.connection = None
@@ -141,6 +145,7 @@ class VoiceQAClient:
         self._tx_buffer = None
         self._tx_offset = 0
         self._tx_source = None
+        self._tx_audio_offset = 0
         self._tx_prefix_done = False
         self._rx_buffer = bytearray()
         self._rx_magic = None
@@ -150,7 +155,7 @@ class VoiceQAClient:
         self._pcm_prebuffer = bytearray()
         self._playback_started = False
         self._playback_sample_rate = 16_000
-        self._playback_prebuffer_bytes = 64_000
+        self._playback_prebuffer_bytes = 16_000
         self._last_network_progress_at = None
         self._response = {}
         self._first_audio_at = None
@@ -165,7 +170,17 @@ class VoiceQAClient:
 
     @property
     def capture_priority(self):
-        return self.state == self.RECORDING
+        # main.py already has an early-continue path for this property.  Use it
+        # throughout a question so sensor/display rendering cannot steal tens
+        # of seconds from audio conversion, upload, receive, or playback.  A
+        # state change is still rendered once, then the existing frame holds.
+        return self.state in (
+            self.RECORDING,
+            self.PROCESSING,
+            self.UPLOADING,
+            self.THINKING,
+            self.PLAYING,
+        )
 
     @property
     def wants_fast_loop(self):
@@ -503,7 +518,12 @@ class VoiceQAClient:
         _safe_remove(self.RAW_PATH)
         _safe_remove(self.WAV_PATH)
         try:
-            self._raw_file = open(self.RAW_PATH, "wb")
+            # This MicroPython build places large allocations in the board's
+            # 8 MB PSRAM.  Keeping raw I2S samples there avoids synchronous
+            # flash writes for every 64 ms microphone block.
+            gc.collect()
+            self._raw_recording = bytearray(self.MAX_RAW_BYTES)
+            self._raw_recorded_bytes = 0
         except Exception as exc:
             self._fail(now_ms, exc)
             return
@@ -522,6 +542,8 @@ class VoiceQAClient:
         self._sample_sum = 0
         self._minimum = 2_147_483_647
         self._maximum = -2_147_483_648
+        self._release_to_upload_ms = None
+        self._release_to_first_audio_ms = None
         self.error = ""
         self._set_state(self.RECORDING, now_ms)
 
@@ -532,7 +554,15 @@ class VoiceQAClient:
         if self._discard_blocks:
             self._discard_blocks -= 1
             return
-        self._raw_file.write(memoryview(block)[:count])
+        remaining = len(self._raw_recording) - self._raw_recorded_bytes
+        count = min(count, remaining)
+        count -= count % 4
+        if count <= 0:
+            return
+        start = self._raw_recorded_bytes
+        end = start + count
+        self._raw_recording[start:end] = memoryview(block)[:count]
+        self._raw_recorded_bytes = end
         for position in range(0, count, 4):
             sample = struct.unpack_from("<i", block, position)[0]
             self._sample_count += 1
@@ -564,13 +594,6 @@ class VoiceQAClient:
 
     def _begin_processing(self, now_ms):
         self.audio.stop_capture()
-        if self._raw_file is not None:
-            try:
-                self._raw_file.flush()
-                self._raw_file.close()
-            except Exception:
-                pass
-            self._raw_file = None
         elapsed = time.ticks_diff(now_ms, self._record_started_at)
         if elapsed < self.MIN_RECORD_MS or self._sample_count < self.SAMPLE_RATE // 5:
             self._fail(now_ms, "recording shorter than 0.25 seconds")
@@ -582,15 +605,14 @@ class VoiceQAClient:
                 abs(self._maximum - self._process_mean),
                 1,
             )
-            self._process_source = open(self.RAW_PATH, "rb")
-            self._process_target = open(self.WAV_PATH, "wb")
-            _write_wav_header(
-                self._process_target,
-                self._sample_count * 2,
-                self.SAMPLE_RATE,
-            )
-            self._process_input = bytearray(4_096)
-            self._process_output = bytearray(2_048)
+            # One division per recording, then only multiply/shift per sample.
+            # The former flash converter divided every sample and was the main
+            # source of the long pause after button release.
+            self._process_scale_q20 = (27_000 << 20) // self._process_peak
+            data_size = self._sample_count * 2
+            self._wav_buffer = bytearray(44 + data_size)
+            self._wav_buffer[:44] = _wav_header(data_size, self.SAMPLE_RATE)
+            self._process_offset = 0
             self._converted = 0
             self._set_state(self.PROCESSING, now_ms)
         except Exception as exc:
@@ -598,40 +620,31 @@ class VoiceQAClient:
 
     def _step_processing(self, now_ms):
         try:
-            count = self._process_source.readinto(self._process_input)
-            if count:
-                count -= count % 4
-                output_position = 0
-                for position in range(0, count, 4):
-                    sample = struct.unpack_from("<i", self._process_input, position)[0]
+            start = self._process_offset
+            end = min(start + self.PROCESS_BLOCK_BYTES, self._raw_recorded_bytes)
+            end -= (end - start) % 4
+            if end > start:
+                output_position = 44 + self._converted * 2
+                for position in range(start, end, 4):
+                    sample = struct.unpack_from(
+                        "<i", self._raw_recording, position
+                    )[0]
                     value = (
-                        (sample - self._process_mean) * 27_000
-                    ) // self._process_peak
+                        (sample - self._process_mean) * self._process_scale_q20
+                    ) >> 20
                     if value > 32_767:
                         value = 32_767
                     elif value < -32_768:
                         value = -32_768
-                    struct.pack_into(
-                        "<h", self._process_output, output_position, value
-                    )
+                    struct.pack_into("<h", self._wav_buffer, output_position, value)
                     output_position += 2
                     self._converted += 1
-                self._process_target.write(
-                    memoryview(self._process_output)[:output_position]
-                )
+                self._process_offset = end
                 return
 
-            self._process_source.close()
-            self._process_target.flush()
-            self._process_target.close()
-            self._process_source = None
-            self._process_target = None
-            _safe_remove(self.RAW_PATH)
-            try:
-                os.sync()
-            except Exception:
-                pass
-            self._wav_bytes = os.stat(self.WAV_PATH)[6]
+            self._wav_bytes = len(self._wav_buffer)
+            self._raw_recording = None
+            self._raw_recorded_bytes = 0
             self._next_connect_at = now_ms
             self._set_state(self.UPLOADING, now_ms)
             gc.collect()
@@ -674,6 +687,7 @@ class VoiceQAClient:
             self._tx_buffer = b"VQW1" + struct.pack(">I", len(encoded)) + encoded
             self._tx_offset = 0
             self._tx_source = None
+            self._tx_audio_offset = 0
             self._tx_prefix_done = False
             self._last_network_progress_at = now_ms
             return True
@@ -723,15 +737,24 @@ class VoiceQAClient:
                 return
             if not self._tx_prefix_done:
                 self._tx_prefix_done = True
-                self._tx_source = open(self.WAV_PATH, "rb")
-            chunk = self._tx_source.read(8_192)
+                if self._wav_buffer is None:
+                    self._tx_source = open(self.WAV_PATH, "rb")
+            if self._wav_buffer is not None:
+                start = self._tx_audio_offset
+                end = min(start + self.UPLOAD_CHUNK_BYTES, self._wav_bytes)
+                chunk = self._wav_buffer[start:end]
+                self._tx_audio_offset = end
+            else:
+                chunk = self._tx_source.read(self.UPLOAD_CHUNK_BYTES)
             if chunk:
                 self._tx_buffer = chunk
                 self._tx_offset = 0
                 self._send_current_buffer(now_ms)
                 return
-            self._tx_source.close()
+            if self._tx_source is not None:
+                self._tx_source.close()
             self._tx_source = None
+            self._wav_buffer = None
             self._rx_buffer = bytearray()
             self._rx_magic = None
             self._rx_header_size = None
@@ -757,7 +780,7 @@ class VoiceQAClient:
         return True
 
     def _start_buffered_playback(self, now_ms):
-        """Move the initial two-second cushion into the I2S DMA buffer."""
+        """Move the initial half-second cushion into the I2S DMA buffer."""
         if self._playback_started:
             return
         if not self._pcm_prebuffer:
@@ -836,11 +859,8 @@ class VoiceQAClient:
                     self._server_finished = True
                     if not self._playback_started:
                         self._start_buffered_playback(now_ms)
-                    # At 16 kHz the 64 KB I2S ring can still contain about two
-                    # seconds of audio.  Drain for the full cushion instead of
-                    # cutting off the final words after the old 1.2 seconds.
                     self.audio.finish_stream(
-                        time.ticks_ms(), self.PLAYBACK_PREBUFFER_MS + 300
+                        time.ticks_ms(), self.PLAYBACK_DRAIN_MS
                     )
                     self._close_connection()
                     return
@@ -870,12 +890,17 @@ class VoiceQAClient:
         try:
             self._receive_available(now_ms)
             self._parse_response(now_ms)
-            if (
-                self._last_network_progress_at is not None
-                and time.ticks_diff(now_ms, self._last_network_progress_at)
-                >= 180_000
-            ):
-                raise RuntimeError("voice server timeout")
+            if self._last_network_progress_at is not None:
+                timeout_ms = (
+                    self.PLAYBACK_STALL_MS
+                    if self._playback_started
+                    else self.SERVER_RESPONSE_TIMEOUT_MS
+                )
+                if (
+                    time.ticks_diff(now_ms, self._last_network_progress_at)
+                    >= timeout_ms
+                ):
+                    raise RuntimeError("voice server timeout")
         except Exception as exc:
             self._fail(now_ms, exc)
 
@@ -886,17 +911,23 @@ class VoiceQAClient:
             except Exception:
                 pass
         self._raw_file = None
-        for source in (self._process_source, self._process_target, self._tx_source):
+        self._raw_recording = None
+        self._raw_recorded_bytes = 0
+        for source in (self._tx_source,):
             if source is not None:
                 try:
                     source.close()
                 except Exception:
                     pass
-        self._process_source = None
-        self._process_target = None
         self._tx_source = None
+        self._wav_buffer = None
+        self._process_offset = 0
+        self._converted = 0
         self._close_connection()
         self._tx_buffer = None
+        self._tx_offset = 0
+        self._tx_audio_offset = 0
+        self._tx_prefix_done = False
         self._rx_buffer = bytearray()
         self._response = {}
         self._rx_magic = None
@@ -906,8 +937,9 @@ class VoiceQAClient:
         self._pcm_prebuffer = bytearray()
         self._playback_started = False
         self._playback_sample_rate = 16_000
-        self._playback_prebuffer_bytes = 64_000
+        self._playback_prebuffer_bytes = 16_000
         self._first_audio_at = None
+        self._last_network_progress_at = None
         if not keep_audio:
             self.audio.stop()
 
