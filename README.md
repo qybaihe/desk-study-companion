@@ -99,6 +99,9 @@ make PYTHON=../.venv/bin/python test
 
 TiDB Cloud连接、表结构和行为上报说明见 `docs/tidb-cloud.md`。
 
+中文手绘系统架构图、端到端数据流和团队开发边界见
+[`docs/architecture.md`](docs/architecture.md)。
+
 ## 开发板源码一致性
 
 2026-08-28已通过raw REPL读取开发板全部Python文件。生产主程序、驱动、融合

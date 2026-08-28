@@ -4,6 +4,14 @@
 > 完成工程集成；“第三方”表示现成硬件、运行时或云服务；虚线表示已经预留但当前
 > 未启用的链路。
 
+![ESP32-S3 书桌学习伴侣手绘架构图](images/desk-study-companion-architecture.png)
+
+可编辑源文件：
+[`desk-study-companion-architecture.excalidraw`](images/desk-study-companion-architecture.excalidraw)
+
+可重复生成源文件的脚本：
+[`tooling/generate_architecture_diagram.py`](../tooling/generate_architecture_diagram.py)
+
 ## 1. 当前实机架构图
 
 ```mermaid
