@@ -75,6 +75,8 @@ class VoiceQAClient:
     MIN_RECORD_MS = 250
     MAX_RECORD_MS = 20_000
     BUTTON_DEBOUNCE_MS = 40
+    PLAYBACK_PREBUFFER_MS = 2_000
+    MAX_PLAYBACK_PREBUFFER_BYTES = 131_072
 
     def __init__(self, audio_manager, button_pin):
         self.audio = audio_manager
@@ -136,6 +138,10 @@ class VoiceQAClient:
         self._rx_header_size = None
         self._pcm_frame_size = None
         self._server_finished = False
+        self._pcm_prebuffer = bytearray()
+        self._playback_started = False
+        self._playback_sample_rate = 16_000
+        self._playback_prebuffer_bytes = 64_000
         self._last_network_progress_at = None
         self._response = {}
         self._first_audio_at = None
@@ -620,6 +626,8 @@ class VoiceQAClient:
             self._rx_header_size = None
             self._pcm_frame_size = None
             self._server_finished = False
+            self._pcm_prebuffer = bytearray()
+            self._playback_started = False
             self._set_state(self.THINKING, now_ms)
         except Exception as exc:
             self._fail(now_ms, exc)
@@ -636,6 +644,27 @@ class VoiceQAClient:
         self._rx_buffer.extend(chunk)
         self._last_network_progress_at = now_ms
         return True
+
+    def _start_buffered_playback(self, now_ms):
+        """Move the initial two-second cushion into the I2S DMA buffer."""
+        if self._playback_started:
+            return
+        if not self._pcm_prebuffer:
+            raise RuntimeError("voice response contained no PCM")
+
+        buffered = self._pcm_prebuffer
+        self._pcm_prebuffer = bytearray()
+        if not self.audio.start_stream(self._playback_sample_rate):
+            raise RuntimeError(self.audio.error or "speaker start failed")
+        self._playback_started = True
+        if not self.audio.write_stream(buffered):
+            raise RuntimeError(self.audio.error or "speaker stream failed")
+
+        self._first_audio_at = now_ms
+        self._release_to_first_audio_ms = time.ticks_diff(
+            now_ms, self._released_at
+        )
+        self._set_state(self.PLAYING, now_ms)
 
     def _parse_response(self, now_ms):
         while True:
@@ -662,11 +691,28 @@ class VoiceQAClient:
                     raise RuntimeError(
                         self._response.get("error", "voice server rejected request")
                     )
-                if not self.audio.start_stream(
-                    int(self._response.get("sample_rate", 24_000))
+                self._playback_sample_rate = int(
+                    self._response.get("sample_rate", 16_000)
+                )
+                channels = int(self._response.get("channels", 1))
+                sample_width = int(self._response.get("sample_width", 2))
+                if (
+                    self._playback_sample_rate < 8_000
+                    or self._playback_sample_rate > 48_000
+                    or channels != 1
+                    or sample_width != 2
                 ):
-                    raise RuntimeError(self.audio.error or "speaker start failed")
-                self._set_state(self.PLAYING, now_ms)
+                    raise RuntimeError("voice PCM format is unsupported")
+                target = (
+                    self._playback_sample_rate
+                    * channels
+                    * sample_width
+                    * self.PLAYBACK_PREBUFFER_MS
+                    // 1_000
+                )
+                self._playback_prebuffer_bytes = min(
+                    target, self.MAX_PLAYBACK_PREBUFFER_BYTES
+                )
 
             if self._pcm_frame_size is None:
                 if len(self._rx_buffer) < 4:
@@ -677,7 +723,14 @@ class VoiceQAClient:
                 self._rx_buffer = self._rx_buffer[4:]
                 if self._pcm_frame_size == 0:
                     self._server_finished = True
-                    self.audio.finish_stream(now_ms)
+                    if not self._playback_started:
+                        self._start_buffered_playback(now_ms)
+                    # At 16 kHz the 64 KB I2S ring can still contain about two
+                    # seconds of audio.  Drain for the full cushion instead of
+                    # cutting off the final words after the old 1.2 seconds.
+                    self.audio.finish_stream(
+                        time.ticks_ms(), self.PLAYBACK_PREBUFFER_MS + 300
+                    )
                     self._close_connection()
                     return
                 if self._pcm_frame_size > 1_048_576:
@@ -688,12 +741,11 @@ class VoiceQAClient:
             pcm = bytes(self._rx_buffer[: self._pcm_frame_size])
             self._rx_buffer = self._rx_buffer[self._pcm_frame_size :]
             self._pcm_frame_size = None
-            if self._first_audio_at is None:
-                self._first_audio_at = now_ms
-                self._release_to_first_audio_ms = time.ticks_diff(
-                    now_ms, self._released_at
-                )
-            if not self.audio.write_stream(pcm):
+            if not self._playback_started:
+                self._pcm_prebuffer.extend(pcm)
+                if len(self._pcm_prebuffer) >= self._playback_prebuffer_bytes:
+                    self._start_buffered_playback(now_ms)
+            elif not self.audio.write_stream(pcm):
                 raise RuntimeError(self.audio.error or "speaker stream failed")
 
     def _step_receive(self, now_ms):
@@ -740,6 +792,10 @@ class VoiceQAClient:
         self._rx_header_size = None
         self._pcm_frame_size = None
         self._server_finished = False
+        self._pcm_prebuffer = bytearray()
+        self._playback_started = False
+        self._playback_sample_rate = 16_000
+        self._playback_prebuffer_bytes = 64_000
         self._first_audio_at = None
         if not keep_audio:
             self.audio.stop()

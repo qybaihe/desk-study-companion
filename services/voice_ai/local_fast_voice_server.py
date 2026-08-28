@@ -5,8 +5,9 @@ Protocol (big-endian lengths):
 client -> ``VQW1`` + JSON length + JSON header + WAV bytes
 server -> ``VA01`` + JSON length + answer JSON + repeated PCM length/data + 0
 
-The returned audio is 24 kHz, mono, signed PCM16LE and is forwarded as soon
-as MiMo produces each streaming TTS chunk.
+MiMo returns 24 kHz mono PCM16LE.  The server downsamples it to 16 kHz before
+forwarding so the ESP32's Wi-Fi link has enough headroom for uninterrupted
+playback.
 """
 
 from __future__ import annotations
@@ -40,6 +41,53 @@ OUTPUT_DIR = ROOT / "lan_outputs"
 MAX_AUDIO_BYTES = 4 * 1024 * 1024
 MAX_HEADER_BYTES = 8192
 DEFAULT_DISCOVERY_PORT = 8767
+OUTPUT_SAMPLE_RATE = 16_000
+NETWORK_PCM_FRAME_BYTES = 8_192
+
+
+class PCM24To16Resampler:
+    """Streaming linear 24 kHz -> 16 kHz converter for mono PCM16LE.
+
+    Three 24 kHz samples cover the same time span as two 16 kHz samples.  The
+    first output is input sample 0 and the second is linearly interpolated
+    halfway between input samples 1 and 2.  Remainders are retained across
+    arbitrary MiMo chunk boundaries.
+    """
+
+    def __init__(self) -> None:
+        self.pending = b""
+
+    def process(self, chunk: bytes) -> bytes:
+        if not chunk:
+            return b""
+        data = self.pending + chunk
+        usable = (len(data) // 6) * 6
+        if not usable:
+            self.pending = data
+            return b""
+
+        output = bytearray((usable // 6) * 4)
+        output_offset = 0
+        for input_offset in range(0, usable, 6):
+            first, second, third = struct.unpack_from("<hhh", data, input_offset)
+            interpolated = (second + third) // 2
+            struct.pack_into(
+                "<hh", output, output_offset, first, interpolated
+            )
+            output_offset += 4
+        self.pending = data[usable:]
+        return bytes(output)
+
+    def finish(self) -> bytes:
+        data = self.pending
+        self.pending = b""
+        if len(data) % 2:
+            raise ValueError("TTS PCM16 数据长度不是偶数")
+        if not data:
+            return b""
+        # One final source sample (or the first of two) is still a valid
+        # output point.  At most one 16-bit sample is emitted here.
+        return data[:2]
 
 
 def recv_exact(connection: socket.socket, size: int) -> bytes:
@@ -53,9 +101,8 @@ def recv_exact(connection: socket.socket, size: int) -> bytes:
 
 
 def send_frame(connection: socket.socket, payload: bytes) -> None:
-    connection.sendall(struct.pack(">I", len(payload)))
-    if payload:
-        connection.sendall(payload)
+    # One send avoids a tiny length-only TCP packet before every PCM frame.
+    connection.sendall(struct.pack(">I", len(payload)) + payload)
 
 
 def send_header(connection: socket.socket, magic: bytes, payload: dict[str, Any]) -> None:
@@ -69,12 +116,16 @@ class VoiceRequestHandler(socketserver.BaseRequestHandler):
     def handle(self) -> None:
         connection: socket.socket = self.request
         connection.settimeout(180)
+        try:
+            connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        except OSError:
+            pass
         request_started = time.monotonic()
         response_started = False
         stamp = datetime.now().strftime("%Y%m%dT%H%M%S-%f")
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         wav_path = OUTPUT_DIR / (stamp + "-question.wav")
-        pcm_path = OUTPUT_DIR / (stamp + "-answer-24k.pcm")
+        pcm_path = OUTPUT_DIR / (stamp + "-answer-16k.pcm")
         result_path = OUTPUT_DIR / (stamp + "-result.json")
         try:
             if recv_exact(connection, 4) != b"VQW1":
@@ -137,7 +188,7 @@ class VoiceRequestHandler(socketserver.BaseRequestHandler):
                 "transcript": transcript,
                 "short_answer": answer["short_answer"],
                 "spoken_answer": answer["spoken_answer"],
-                "sample_rate": 24_000,
+                "sample_rate": OUTPUT_SAMPLE_RATE,
                 "channels": 1,
                 "sample_width": 2,
                 "latency_ms": {
@@ -152,16 +203,26 @@ class VoiceRequestHandler(socketserver.BaseRequestHandler):
             first_pcm_at: float | None = None
             pcm_bytes = 0
             pcm_lock = threading.Lock()
+            resampler = PCM24To16Resampler()
             with pcm_path.open("wb") as pcm_output:
 
-                def forward_pcm(chunk: bytes) -> None:
+                def emit_pcm(chunk: bytes) -> None:
                     nonlocal first_pcm_at, pcm_bytes
+                    if not chunk:
+                        return
                     if first_pcm_at is None:
                         first_pcm_at = time.monotonic()
                     with pcm_lock:
                         pcm_output.write(chunk)
-                        send_frame(connection, chunk)
+                        for offset in range(0, len(chunk), NETWORK_PCM_FRAME_BYTES):
+                            send_frame(
+                                connection,
+                                chunk[offset : offset + NETWORK_PCM_FRAME_BYTES],
+                            )
                     pcm_bytes += len(chunk)
+
+                def forward_pcm(chunk: bytes) -> None:
+                    emit_pcm(resampler.process(chunk))
 
                 tts_meta, tts_first_ms, tts_total_ms = stream_tts_pcm(
                     answer["spoken_answer"],
@@ -171,6 +232,12 @@ class VoiceRequestHandler(socketserver.BaseRequestHandler):
                     voice=voice,
                     on_chunk=forward_pcm,
                 )
+                emit_pcm(resampler.finish())
+            tts_meta["source_sample_rate"] = int(
+                tts_meta.get("sample_rate", 24_000)
+            )
+            tts_meta["delivered_sample_rate"] = OUTPUT_SAMPLE_RATE
+            tts_meta["delivered_pcm_bytes"] = pcm_bytes
             send_frame(connection, b"")
             total_ms = round((time.monotonic() - request_started) * 1000)
             first_audio_ms = (
