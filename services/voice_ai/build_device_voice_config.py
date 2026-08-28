@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 import secrets
 from pathlib import Path
+from urllib.parse import urlparse
 
 
 ROOT = Path(__file__).resolve().parent
@@ -56,6 +57,22 @@ def build() -> Path:
     fallback_host = require(values, "VOICE_MAC_HOST")
     fast_port = int(values.get("VOICE_FAST_PORT", "8766"))
     discovery_port = int(values.get("VOICE_DISCOVERY_PORT", "8767"))
+    mimo_api_key = require(values, "MIMO_API_KEY")
+    mimo_base_url = values.get(
+        "MIMO_BASE_URL", "https://api.xiaomimimo.com/v1"
+    ).strip()
+    parsed_api = urlparse(mimo_base_url)
+    if parsed_api.scheme != "https" or not parsed_api.hostname:
+        raise RuntimeError("MIMO_BASE_URL must be an https URL")
+    mimo_api_host = parsed_api.hostname
+    mimo_api_port = parsed_api.port or 443
+    mimo_api_path = parsed_api.path.rstrip("/") + "/chat/completions"
+    mimo_asr_model = values.get("MIMO_ASR_MODEL", "mimo-v2.5-asr").strip()
+    mimo_solver_model = values.get(
+        "MIMO_SOLVER_MODEL", "mimo-v2.5-pro"
+    ).strip()
+    mimo_tts_model = values.get("MIMO_TTS_MODEL", "mimo-v2.5-tts").strip()
+    mimo_tts_voice = values.get("MIMO_TTS_VOICE", "冰糖").strip()
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(
@@ -66,6 +83,15 @@ def build() -> Path:
         "VOICE_PORT = %d\n"
         "DISCOVERY_PORT = %d\n"
         "DEVICE_TOKEN = %r\n"
+        "MIMO_API_KEY = %r\n"
+        "MIMO_API_HOST = %r\n"
+        "MIMO_API_PORT = %d\n"
+        "MIMO_API_PATH = %r\n"
+        "MIMO_ASR_MODEL = %r\n"
+        "MIMO_SOLVER_MODEL = %r\n"
+        "MIMO_TTS_MODEL = %r\n"
+        "MIMO_TTS_VOICE = %r\n"
+        "MIMO_CA_PATH = '/mimo_intermediate_ca.der'\n"
         % (
             ssid,
             password,
@@ -73,6 +99,14 @@ def build() -> Path:
             fast_port,
             discovery_port,
             token,
+            mimo_api_key,
+            mimo_api_host,
+            mimo_api_port,
+            mimo_api_path,
+            mimo_asr_model,
+            mimo_solver_model,
+            mimo_tts_model,
+            mimo_tts_voice,
         ),
         encoding="utf-8",
     )

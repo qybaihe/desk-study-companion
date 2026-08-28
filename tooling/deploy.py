@@ -211,6 +211,11 @@ if __name__ == "__main__":
     upload("firmware/voice_device_actions.py", "/voice_device_actions.py")
     upload("firmware/study_reminder.py", "/study_reminder.py")
     upload("firmware/audio_manager.py", "/audio_manager.py")
+    upload("firmware/mimo_cloud.py", "/mimo_cloud.py")
+    upload(
+        "firmware/assets/certs/mimo_intermediate_ca.der",
+        "/mimo_intermediate_ca.der",
+    )
     upload("firmware/voice_qa_client.py", "/voice_qa_client.py")
     upload(
         "services/voice_ai/generated/voice_qa_config.py",
@@ -261,6 +266,7 @@ if __name__ == "__main__":
         "compile(open('/voice_device_actions.py').read(), '/voice_device_actions.py', 'exec');"
         "compile(open('/study_reminder.py').read(), '/study_reminder.py', 'exec');"
         "compile(open('/audio_manager.py').read(), '/audio_manager.py', 'exec');"
+        "compile(open('/mimo_cloud.py').read(), '/mimo_cloud.py', 'exec');"
         "compile(open('/voice_qa_client.py').read(), '/voice_qa_client.py', 'exec');"
         "compile(open('/voice_qa_config.py').read(), '/voice_qa_config.py', 'exec');"
         "compile(open('/speaker_prompt.py').read(), '/speaker_prompt.py', 'exec');"
@@ -274,10 +280,12 @@ if __name__ == "__main__":
         "f=open('/low_light_7.rgb565','rb').read();"
         "g=open('/rest_break_0.rgb565','rb').read();"
         "h=open('/rest_break_7.rgb565','rb').read();"
+        "i=open('/mimo_intermediate_ca.der','rb').read();"
         "assert len(a)==30464 and len(b)==30464 and len(c)>0 and len(c)%2==0 and "
         "len(d)>0 and len(d)%2==0 and "
         "len(e)==30464 and len(f)==30464 and "
         "len(g)==30464 and len(h)==30464 and "
+        "len(i)>800 and i[:2]==b'0\\x82' and "
         "binascii.crc32(a)==binascii.crc32(b);"
         "print('COMPILE_OK')"
     )
