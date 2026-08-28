@@ -125,9 +125,9 @@ enum Mock {
         goalHours: 4, distanceMin: 400, distanceMax: 850,
         lowLightHint: "按相对百分比判定，冷却 30 分钟",
         channels: [
-            .init(label: "设备语音提示", hint: "小羊出声，孩子端能听到", on: true),
-            .init(label: "设备动画提示", hint: "屏幕上小羊做动作，不出声", on: true),
-            .init(label: "推送", hint: "仅每日总结与周报，不做实时告警", on: true),
+            .init(label: "小羊出声提醒", hint: "", on: true),
+            .init(label: "屏幕动画提醒", hint: "", on: true),
+            .init(label: "每日推送", hint: "仅总结与周报，不做实时告警", on: true),
         ],
         childVisible: true,
         deviceName: "书桌设备 · 小满的桌子",

@@ -86,9 +86,10 @@ struct APISource: StudyDataSource {
             "goalHours": s.goalHours,
             "distanceMin": s.distanceMin,
             "distanceMax": s.distanceMax,
-            "voiceOn": s.channels.first(where: { $0.label.contains("语音") })?.on ?? true,
-            "animOn": s.channels.first(where: { $0.label.contains("动画") })?.on ?? true,
-            "pushOn": s.channels.first(where: { $0.label.contains("推送") })?.on ?? true,
+            // 按下标取，不按标签文字 —— 标签是可以改文案的，改一次匹配就错位
+            "voiceOn": s.channels.indices.contains(0) ? s.channels[0].on : true,
+            "animOn": s.channels.indices.contains(1) ? s.channels[1].on : true,
+            "pushOn": s.channels.indices.contains(2) ? s.channels[2].on : true,
             "childVisible": s.childVisible,
         ])
     }
