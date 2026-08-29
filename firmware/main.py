@@ -465,6 +465,9 @@ if cloud_cfg is not None:
             feed=system_watchdog.feed,     # TLS 握手可能比看门狗还慢
         )
         uplink.load_cached_config()
+        # Wi-Fi 归 Net 独占。voice_qa 原来也在每 3 秒 disconnect/connect 一次，
+        # 两个组件抢同一个 STA 接口，板子就会反复掉线。
+        voice_qa.manages_wifi = False
     except Exception as exc:
         print("uplink init failed:", exc)
 
@@ -550,6 +553,26 @@ def _apply_message(now_ms):
             print("message bitmap failed:", exc)
     message_until = time.ticks_add(now_ms, MESSAGE_HOLD_MS)
     print("message:", message_text)
+    # 语音是 Worker 那边合成好的 16kHz 裸 PCM，后台线程下回来再播。
+    # 家长关掉「小羊出声提醒」就只显示不出声。
+    audio = m.get("audio")
+    if audio and voice_enabled:
+        uplink.fetch_audio(audio)
+
+
+def _play_message_audio():
+    """语音下好了就播。放在主循环里，播放本身是非阻塞的 I2S 流。"""
+    if uplink is None:
+        return
+    path = uplink.take_audio()
+    if not path:
+        return
+    if voice_player.busy or voice_qa.busy:
+        return
+    try:
+        voice_player.start_local(path, 16_000)
+    except Exception as exc:
+        print("message audio play failed:", exc)
 
 
 def _message_active(now_ms):
@@ -648,13 +671,21 @@ while True:
                     # 远超主循环 8 秒的看门狗。
                     clock_synced = uplink.ensure_clock()
                 uplink.poll()          # 空闲时轻量拉配置和家长动作
+                uplink.pump_ask()      # 有问答记录就尽快报上去
             _apply_downlink_config()   # App 改的阈值真正生效
             _apply_actions(loop_now)   # 家长按的喂草/奖励
             _apply_message(loop_now)   # 家长捎的话，OLED 接管十秒
+            _play_message_audio()      # 语音下好了就放出来
         except Exception as exc:
             print("uplink pump failed:", exc)
     voice_player.update(loop_now)
     voice_qa.update(loop_now)
+    if uplink is not None:
+        # 板子自己调的 MiMo，转写和答案都在它手里 —— 交给上行层写进 ask_log，
+        # 家长端的「提问」页才看得到孩子问了什么。
+        _qa = voice_qa.take_pending_ask()
+        if _qa:
+            uplink.report_ask(_qa[0], _qa[1])
     discovered_rtc = voice_qa.take_beijing_rtc()
     if discovered_rtc is not None:
         try:
@@ -801,9 +832,12 @@ while True:
         now, day_key, time.ticks_diff,
     )
 
-    # 时钟没同步就先不传 —— RTC 未设时 time.localtime() 是 2000 年，
-    # 传上去的样本会落在一个永远查不到的日期里。
-    if uplink is not None and clock_synced:
+    # 不再拿 clock_synced 当门槛 —— 那会死锁：没对上表就不上传，而恰恰是
+    # 上报的响应里带着服务器时间。NTP 和 /time 都可能失败（实测 ETIMEDOUT
+    # 和 ECONNRESET 都遇到过），一旦失败板子就永远不报了。
+    # Worker 会拒收 2020 年之前和未来的时间戳，所以照发无妨：脏样本被丢掉，
+    # 响应里的 now 把 RTC 校正，下一批就是对的。
+    if uplink is not None:
         try:
             # 板子的 visual_state() 只有 NORMAL/SICK/EVOLVED 三档，而 App
             # 认六档。护眼产品看不到"光线偏暗"、专注产品分不出"人走了"，

@@ -130,6 +130,26 @@ struct APISource: StudyDataSource {
     }
 }
 
+/// URLSession 的 localizedDescription 在这套环境下是英文（"The request timed out."），
+/// 摆在一个中文 App 的错误页上很扎眼。常见几种自己翻。
+func friendlyError(_ error: Error) -> String {
+    guard let e = error as? URLError else {
+        return (error as NSError).code == NSURLErrorBadServerResponse
+            ? "后台返回了意外的结果" : "出了点问题，稍后再试"
+    }
+    switch e.code {
+    case .timedOut:              return "连接超时。检查一下网络，或者稍后再试"
+    case .notConnectedToInternet: return "手机没有联网"
+    case .networkConnectionLost: return "网络中断了"
+    case .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
+                                 return "找不到后台服务器"
+    case .badServerResponse:     return "后台返回了意外的结果"
+    case .userAuthenticationRequired: return "访问令牌不对"
+    default:                     return "连接失败（\(e.code.rawValue)）"
+    }
+}
+
+
 @MainActor
 final class Store: ObservableObject {
     @Published var snapshot: Snapshot = Mock.snapshot
@@ -189,7 +209,7 @@ final class Store: ObservableObject {
             await refresh()
             return nil
         } catch {
-            return error.localizedDescription
+            return friendlyError(error)
         }
     }
 
@@ -199,7 +219,7 @@ final class Store: ObservableObject {
         settings = s
         guard let api = source as? APISource else { return }
         do { try await api.putSettings(s); lastError = nil }
-        catch { lastError = error.localizedDescription }
+        catch { lastError = friendlyError(error) }
     }
 
     /// 返回是否送达。UI 拿它来决定给不给反馈。
@@ -207,7 +227,7 @@ final class Store: ObservableObject {
     func sendAction(_ kind: String) async -> Bool {
         guard let api = source as? APISource else { return false }
         do { try await api.sendAction(kind); lastError = nil; return true }
-        catch { lastError = error.localizedDescription; return false }
+        catch { lastError = friendlyError(error); return false }
     }
 
     /// 给孩子捎一句话。板子取走后在 OLED 上显示十秒。
@@ -215,7 +235,7 @@ final class Store: ObservableObject {
     func sendMessage(_ text: String) async -> Bool {
         guard let api = source as? APISource else { return false }
         do { try await api.sendMessage(text); lastError = nil; return true }
-        catch { lastError = error.localizedDescription; return false }
+        catch { lastError = friendlyError(error); return false }
     }
 
     /// 切到某一期。传 nil 回到最新。
@@ -256,9 +276,10 @@ final class Store: ObservableObject {
             cacheAll()
             load = .ready
         } catch {
-            lastError = error.localizedDescription
+            let msg = friendlyError(error)
+            lastError = msg
             // 已经有数据在屏幕上就别把它换成错误页，留着旧数据 + 顶部提示
-            if load == .loading { load = .failed(error.localizedDescription) }
+            if load == .loading { load = .failed(msg) }
         }
     }
 

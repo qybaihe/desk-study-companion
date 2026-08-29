@@ -60,7 +60,12 @@ class Net:
         self.feed = feed or (lambda: None)
         self.wlan = network.WLAN(network.STA_IF)
         self.wlan.active(True)
-        self.wlan.config(reconnects=-1)      # 底层无限重连
+        try:
+            self.wlan.config(reconnects=-1)  # 底层无限重连
+        except OSError:
+            # 接口刚被别人动过时会抛 "Wifi Internal State Error"。
+            # 这只是个优化项，失败了不该让整个上行层建不起来。
+            pass
         self._buf = []
         self._last_flush = time.time()
         self._backoff = 1
@@ -72,7 +77,9 @@ class Net:
         self._busy = False        # 上报线程是否在跑，同一时刻只允许一个
         self.clock_ok = False     # RTC 对上表了没有
         self.actions = []         # 家长按下来的一次性动作，主循环取走
+        self._asks = []           # 待上报的问答，最多攒 8 条
         self.message = None       # 家长捎的话，主循环取走后在 OLED 上显示十秒
+        self.audio_ready = None   # 语音下好了的文件路径，主循环取走去播
         self.study_seconds = 0    # 板子自己的当日在座秒数，跟着上报一起走
         self.poll_seconds = 20
         self._last_contact = 0
@@ -136,24 +143,27 @@ class Net:
             print("clock: ntp failed:", exc)
 
         self.feed()
-        r = None
-        try:
-            r = requests.get(self.base + "/time", headers=self._headers(),
-                             timeout=25)
-            now = r.json()["now"]        # "YYYY-MM-DD HH:MM:SS" UTC
-            self._set_rtc_from_utc((
-                int(now[0:4]), int(now[5:7]), int(now[8:10]),
-                int(now[11:13]), int(now[14:16]), int(now[17:19]), 0, 0))
-            print("clock: worker ok", now, "UTC")
-            return True
-        except Exception as exc:
-            print("clock: worker failed:", exc)
-            return False
-        finally:
-            if r:
-                try: r.close()
-                except Exception: pass
-            gc.collect()
+        for attempt in range(2):     # 这条链路上 ECONNRESET 是常态，值得再试一次
+            r = None
+            try:
+                r = requests.get(self.base + "/time", headers=self._headers(),
+                                 timeout=25)
+                now = r.json()["now"]    # "YYYY-MM-DD HH:MM:SS" UTC
+                self._set_rtc_from_utc((
+                    int(now[0:4]), int(now[5:7]), int(now[8:10]),
+                    int(now[11:13]), int(now[14:16]), int(now[17:19]), 0, 0))
+                print("clock: worker ok", now, "UTC")
+                return True
+            except Exception as exc:
+                print("clock: worker failed:", exc)
+            finally:
+                if r:
+                    try: r.close()
+                    except Exception: pass
+                gc.collect()
+            if attempt == 0:
+                time.sleep(2)
+        return False
 
     @staticmethod
     def _set_rtc_from_utc(utc_tuple):
@@ -315,6 +325,47 @@ class Net:
             self.message = m      # 一次只留一条 —— 十秒的展示窗口排不了队
         self._last_contact = time.time()
 
+    AUDIO_PATH = "/msg.pcm"
+
+    def fetch_audio(self, path):
+        """把 Worker 合成好的裸 PCM 下到 flash。
+
+        16kHz 单声道 16bit，一句话大概 90KB。板子这条 TLS 本来就慢，
+        所以整个下载跑在后台线程里，主循环一秒都不等。
+        """
+        if self._busy or not self.online:
+            return
+        self._start(self._pull_audio, path)
+
+    def _pull_audio(self, path):
+        r = None
+        self.feed()
+        try:
+            r = requests.get(self.base + path, headers=self._headers(), timeout=45)
+            if r.status_code // 100 != 2:
+                print("audio http", r.status_code)
+                return
+            data = r.content
+            if len(data) < 3200:            # 不到 0.1 秒，多半是出错了
+                print("audio too small:", len(data))
+                return
+            with open(self.AUDIO_PATH, "wb") as f:
+                f.write(data)
+            self.audio_ready = self.AUDIO_PATH
+            print("audio ready:", len(data), "bytes")
+        except Exception as exc:
+            print("audio fetch failed:", exc)
+        finally:
+            if r:
+                try: r.close()
+                except Exception: pass
+            gc.collect()
+            self.feed()
+
+    def take_audio(self):
+        p, self.audio_ready = self.audio_ready, None
+        return p
+
     def take_message(self):
         """主循环取走捎话。取完就清空。"""
         m, self.message = self.message, None
@@ -336,6 +387,53 @@ class Net:
         if self._busy or not self.online:
             return
         self._start(self._send, [])
+
+    def report_ask(self, question, answer=""):
+        """把一轮语音问答排进上报队列。
+
+        板子已经有转写和答案两段文本（它自己调的 MiMo），只是从来没往
+        库里写过 —— ask_log 一直是空的，所以手机上的「提问」页什么都看不到。
+        """
+        q = (question or "").strip()
+        if not q:
+            return
+        if len(self._asks) >= 8:      # 攒太多说明网一直不通，丢最老的
+            self._asks.pop(0)
+        self._asks.append((q, (answer or "").strip()))
+
+    def pump_ask(self):
+        """非阻塞。有待报的就交给后台线程发。
+
+        一次 TLS 握手 2~3 秒，主循环的看门狗只有 8 秒 —— 不能同步发。
+        """
+        if self._busy or not self.online or not self._asks:
+            return
+        self._start(self._send_ask, self._asks.pop(0))
+
+    def _send_ask(self, item, tries=0):
+        q, a = item
+        r = None
+        self.feed()
+        try:
+            r = requests.post(
+                self.base + "/api/ask", headers=self._headers(),
+                data=ujson.dumps({"device_id": self.device_id,
+                                  "child_id": self.child_id,
+                                  "question": q, "answer": a}),
+                timeout=25)
+            if r.status_code // 100 != 2:
+                raise RuntimeError("ask %d" % r.status_code)
+            print("ask reported:", q[:20])
+        except Exception as exc:
+            print("ask report failed:", exc)
+            if tries < 1:             # 只重排一次，别把队列堵死
+                self._asks.insert(0, item)
+        finally:
+            if r:
+                try: r.close()
+                except Exception: pass
+            gc.collect()
+            self.feed()
 
     def poll(self):
         """空闲时的轻量拉取。非阻塞，实际请求在后台线程里发。"""

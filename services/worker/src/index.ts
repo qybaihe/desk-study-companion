@@ -18,6 +18,7 @@ import { MOCK, DEFAULT_CONFIG } from './mock';
 export interface Env {
   DATABASE_URL?: string;   // mysql://user:pass@host/db   （wrangler secret put）
   API_TOKEN?: string;      // 设了就要求 Bearer 鉴权      （wrangler secret put）
+  MIMO_API_KEY?: string;   // 语音合成                    （wrangler secret put）
 }
 
 const JSON_HEADERS = {
@@ -563,6 +564,112 @@ async function settings(env: Env, childId: string) {
   };
 }
 
+// ───────────────────────────────── 语音合成
+
+const TTS_STYLE = "请用温和、清晰、有耐心的中文语气朗读，语速稍慢，" +
+                  "不要加入目标文本之外的内容。";
+/** 板子扬声器固定 16kHz 单声道 16bit */
+const SPEAKER_RATE = 16000;
+/** 一句话最多合成这么多字。板子那条 TLS 慢，200 字会是 20 秒音频、600KB。 */
+const TTS_MAX_CHARS = 40;
+
+/** WAV → 16kHz 单声道 s16le 裸 PCM。
+ *  MiMo 返回的是 24kHz 单声道，板子要 16kHz，比例 3:2。 */
+function wavTo16kPcm(wav: ArrayBuffer): ArrayBuffer {
+  const v = new DataView(wav);
+  if (v.getUint32(0, false) !== 0x52494646) throw new Error('不是 RIFF');
+  let off = 12, channels = 1, rate = SPEAKER_RATE, bits = 16;
+  let dataOff = -1, dataLen = 0;
+  while (off + 8 <= wav.byteLength) {
+    const id = v.getUint32(off, false);
+    const size = v.getUint32(off + 4, true);
+    const body = off + 8;
+    if (id === 0x666d7420) {            // "fmt "
+      channels = v.getUint16(body + 2, true);
+      rate = v.getUint32(body + 4, true);
+      bits = v.getUint16(body + 14, true);
+    } else if (id === 0x64617461) {     // "data"
+      dataOff = body; dataLen = size; break;
+    }
+    off = body + size + (size & 1);
+  }
+  if (dataOff < 0) throw new Error('WAV 里没有 data 块');
+  if (bits !== 16) throw new Error(`只支持 16bit，收到 ${bits}`);
+
+  const src = new Int16Array(wav.slice(dataOff, dataOff + dataLen));
+  // 先合成单声道
+  const mono = channels === 1 ? src : (() => {
+    const m = new Int16Array(src.length / channels);
+    for (let i = 0; i < m.length; i++) {
+      let sum = 0;
+      for (let c = 0; c < channels; c++) sum += src[i * channels + c];
+      m[i] = sum / channels;
+    }
+    return m;
+  })();
+  if (rate === SPEAKER_RATE) return mono.buffer as ArrayBuffer;
+
+  // 线性插值重采样
+  const ratio = rate / SPEAKER_RATE;
+  const out = new Int16Array(Math.floor(mono.length / ratio));
+  for (let i = 0; i < out.length; i++) {
+    const x = i * ratio;
+    const j = Math.floor(x), f = x - j;
+    const a = mono[j] ?? 0, b = mono[j + 1] ?? a;
+    out[i] = a + (b - a) * f;
+  }
+  return out.buffer as ArrayBuffer;
+}
+
+/** 合成一句话，返回板子能直接喂给 I2S 的裸 PCM。 */
+async function synthesize(env: Env, text: string): Promise<ArrayBuffer> {
+  if (!env.MIMO_API_KEY) throw new Error('MIMO_API_KEY 未配置');
+  const body = {
+    model: 'mimo-v2.5-tts',
+    messages: [
+      { role: 'user', content: TTS_STYLE },
+      { role: 'assistant', content: text.slice(0, TTS_MAX_CHARS) },
+    ],
+    audio: { format: 'wav', voice: '冰糖' },
+    stream: false,
+  };
+  const r = await fetch('https://api.xiaomimimo.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json',
+               authorization: `Bearer ${env.MIMO_API_KEY}` },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`MiMo ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  const j = await r.json() as any;
+  const b64 = j?.choices?.[0]?.message?.audio?.data;
+  if (!b64) throw new Error('MiMo 响应里没有音频');
+  const bin = atob(b64);
+  const wav = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) wav[i] = bin.charCodeAt(i);
+  return wavTo16kPcm(wav.buffer);
+}
+
+/** 合成一次就存库，不用 Cache API。
+ *
+ *  CF 的 caches.default 是按边缘节点分的，请求落到别的 colo 就重新合成 ——
+ *  实测同一条消息连取三次，两次字节数不同、一次直接超时。板子那条链路本来
+ *  就不稳，需要重试时必须每次拿到同样的字节。 */
+async function warmAudio(env: Env, id: number, text: string) {
+  const conn = db(env);
+  if (!conn || !env.MIMO_API_KEY) return;
+  try {
+    const pcm = await synthesize(env, text);
+    const bytes = new Uint8Array(pcm);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 8192) {
+      bin += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    }
+    await conn.execute('UPDATE device_message SET audio=? WHERE id=?', [btoa(bin), id]);
+  } catch (e) {
+    console.log('tts failed', e);
+  }
+}
+
 // ───────────────────────────────── 家长捎话
 
 const DDL_MESSAGE = `CREATE TABLE IF NOT EXISTS device_message (
@@ -570,6 +677,7 @@ const DDL_MESSAGE = `CREATE TABLE IF NOT EXISTS device_message (
   child_id     VARCHAR(64)  NOT NULL,
   text         VARCHAR(200) NOT NULL,
   bitmap       TEXT,
+  audio        LONGTEXT,
   created_at   DATETIME     NOT NULL,
   delivered_at DATETIME     NULL,
   KEY idx_pending (child_id, delivered_at, id)
@@ -580,7 +688,8 @@ const DDL_MESSAGE = `CREATE TABLE IF NOT EXISTS device_message (
  *  bitmap 是 App 渲染好的 128x64 单色位图（MONO_VLSB，base64）。
  *  OLED 用的是 framebuf 内置的 8x8 ASCII 字库，画不了中文 —— 与其在板子上
  *  塞一套中文字库，不如让有字体的那一端（手机）把字排好版画成位图。 */
-async function putMessage(req: Request, env: Env): Promise<Response> {
+async function putMessage(req: Request, env: Env,
+                          ctx?: ExecutionContext): Promise<Response> {
   const b = await req.json() as { child_id?: string; text?: string; bitmap?: string };
   const id = (b.child_id ?? '').trim();
   const text = (b.text ?? '').trim().slice(0, 200);
@@ -590,6 +699,9 @@ async function putMessage(req: Request, env: Env): Promise<Response> {
   const conn = db(env);
   if (!conn) return json({ ok: true, queued: 0 });
   await conn.execute(DDL_MESSAGE);
+  // 旧库补列。takeMessage 会 SELECT 这一列，缺了就整条消息静默消失。
+  try { await conn.execute('ALTER TABLE device_message ADD COLUMN audio LONGTEXT'); }
+  catch { /* 已经有了 */ }
   // 送达过的就没用了 —— 它在 OLED 上露过十秒，留着只会让表无限长，
   // 还会把测试时误发的内容一直留在库里。
   await conn.execute(
@@ -597,7 +709,14 @@ async function putMessage(req: Request, env: Env): Promise<Response> {
   await conn.execute(
     'INSERT INTO device_message (child_id, text, bitmap, created_at) VALUES (?,?,?,NOW())',
     [id, text, bmp || null]);
-  return json({ ok: true, queued: 1 });
+  const row = await conn.execute(
+    'SELECT id FROM device_message WHERE child_id=? ORDER BY id DESC LIMIT 1',
+    [id]) as Record<string, any>[];
+  const mid = Number(row?.[0]?.id ?? 0);
+  // 合成要六秒左右。板子最多二十秒后才来拉，趁这段时间先把音频做好，
+  // 它到的时候直接命中缓存。
+  if (mid && env.MIMO_API_KEY && ctx) ctx.waitUntil(warmAudio(env, mid, text));
+  return json({ ok: true, queued: 1, id: mid });
 }
 
 /** 板子每次联系服务器时取一条。一次只给一条 —— 十秒的展示窗口排不了队。 */
@@ -606,16 +725,22 @@ async function takeMessage(env: Env, childId: string) {
   if (!conn) return null;
   try {
     const rows = await conn.execute(
-      `SELECT id, text, bitmap FROM device_message
+      `SELECT id, text, bitmap, audio IS NOT NULL AS has_audio FROM device_message
         WHERE child_id=? AND delivered_at IS NULL
         ORDER BY id LIMIT 1`, [childId]) as Record<string, any>[];
     if (!rows?.length) return null;
     await conn.execute(
       'UPDATE device_message SET delivered_at=NOW() WHERE id=?', [rows[0].id]);
-    return { id: Number(rows[0].id), text: String(rows[0].text),
-             bitmap: rows[0].bitmap ?? null };
-  } catch {
-    return null;      // 表还没建出来时不该拖垮上报
+    const id = Number(rows[0].id);
+    return { id, text: String(rows[0].text), bitmap: rows[0].bitmap ?? null,
+             // 板子拿这个去下裸 PCM（16kHz 单声道），直接喂 I2S。
+             // 合成还没做完就先不给 —— OLED 那半边不该等语音。
+             audio: rows[0].has_audio ? `/audio/${id}` : null };
+  } catch (e) {
+    // 表还没建出来时不该拖垮上报，但要留痕 —— 之前这里静默吞掉了一个
+    // 「列不存在」的错误，表现是消息排进去了却永远送不到板子。
+    console.log('takeMessage failed', e);
+    return null;
   }
 }
 
@@ -887,7 +1012,7 @@ async function weekly(env: Env, childId: string, weekKey?: string) {
 // ───────────────────────────────── 路由
 
 export default {
-  async fetch(req: Request, env: Env): Promise<Response> {
+  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     if (req.method === 'OPTIONS') return new Response(null, { headers: JSON_HEADERS });
 
     const url = new URL(req.url);
@@ -915,7 +1040,23 @@ export default {
       if (path === '/api/settings' && req.method === 'POST') return await putSettings(req, env);
       if (path === '/api/action' && req.method === 'POST') return await pushAction(req, env);
       if (path === '/api/ask' && req.method === 'POST') return await putAsk(req, env);
-      if (path === '/api/message' && req.method === 'POST') return await putMessage(req, env);
+      if (path === '/api/message' && req.method === 'POST') return await putMessage(req, env, ctx);
+      if (path.startsWith('/audio/')) {
+        const mid = Number(path.slice(7));
+        const conn2 = db(env);
+        if (!mid || !conn2) return json({ error: 'not found' }, 404);
+        const r = await conn2.execute(
+          'SELECT audio FROM device_message WHERE id=?', [mid]) as Record<string, any>[];
+        const b64 = r?.[0]?.audio;
+        if (!b64) return json({ error: '音频还没合成好' }, 404);
+        const bin = atob(String(b64));
+        const pcm = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) pcm[i] = bin.charCodeAt(i);
+        return new Response(pcm, {
+          headers: { 'content-type': 'application/octet-stream',
+                     'content-length': String(pcm.length) },
+        });
+      }
       // 板子空闲时的轻量轮询：只拿配置和待办动作，不带样本。
       // 家长按下喂草到小羊有反应，靠的就是这一条。
       if (path === '/pull') {

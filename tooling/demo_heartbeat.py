@@ -12,6 +12,16 @@
 """
 import argparse, datetime as dt, json, urllib.request
 
+# 有些网络（比如国内不少家宽）没有到 Cloudflare 的 IPv6 路由，而 Python 的
+# urllib 会优先试 AAAA 然后卡住。强制走 IPv4 —— 浏览器和 URLSession 有
+# Happy Eyeballs 会自动回退，urllib 没有。
+import socket as _socket
+_orig_getaddrinfo = _socket.getaddrinfo
+def _ipv4_only(host, port, family=0, type=0, proto=0, flags=0):
+    return _orig_getaddrinfo(host, port, _socket.AF_INET, type, proto, flags)
+_socket.getaddrinfo = _ipv4_only
+
+
 BASE = "https://sheepy.timoz.me"
 
 
