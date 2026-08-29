@@ -8,1171 +8,1212 @@
       "id": "canvas_frame",
       "x": 30,
       "y": 25,
-      "width": 2380,
-      "height": 1430,
+      "width": 3240,
+      "height": 1920,
       "strokeColor": "#adb5bd",
       "backgroundColor": "#ffffff",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 101,
+      "seed": 201,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "title",
-      "x": 90,
+      "x": 110,
       "y": 55,
-      "width": 2260,
+      "width": 3080,
       "height": 58,
       "text": "ESP32-S3 书桌学习伴侣 · 实机系统架构",
-      "fontSize": 40,
+      "fontSize": 42,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "text",
       "id": "subtitle",
-      "x": 90,
-      "y": 115,
-      "width": 2260,
-      "height": 32,
-      "text": "真实输入 → 边缘计算 → SDK / Agent / Tool → 数据与实际输出",
-      "fontSize": 21,
+      "x": 110,
+      "y": 118,
+      "width": 3080,
+      "height": 34,
+      "text": "真实输入 → ESP32 边缘计算 → SDK / Agent / Tool → 数据与实际输出",
+      "fontSize": 22,
       "fontFamily": 1,
       "strokeColor": "#868e96",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "legend_0",
-      "x": 530,
-      "y": 165,
-      "width": 42,
-      "height": 26,
+      "x": 575,
+      "y": 174,
+      "width": 46,
+      "height": 28,
       "strokeColor": "#1971c2",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 102,
+      "seed": 202,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "legend_text_0",
-      "x": 585,
-      "y": 164,
-      "width": 220,
-      "height": 28,
+      "x": 633,
+      "y": 172,
+      "width": 250,
+      "height": 32,
       "text": "团队开发",
-      "fontSize": 17,
+      "fontSize": 18,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "left",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "legend_1",
-      "x": 830,
-      "y": 165,
-      "width": 42,
-      "height": 26,
+      "x": 940,
+      "y": 174,
+      "width": 46,
+      "height": 28,
       "strokeColor": "#862e9c",
       "backgroundColor": "#d0bfff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 103,
+      "seed": 203,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "legend_text_1",
-      "x": 885,
-      "y": 164,
-      "width": 220,
-      "height": 28,
+      "x": 998,
+      "y": 172,
+      "width": 250,
+      "height": 32,
       "text": "第三方 SDK / 模型",
-      "fontSize": 17,
+      "fontSize": 18,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "left",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "legend_2",
-      "x": 1190,
-      "y": 165,
-      "width": 42,
-      "height": 26,
+      "x": 1395,
+      "y": 174,
+      "width": 46,
+      "height": 28,
       "strokeColor": "#e8590c",
       "backgroundColor": "#ffec99",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 104,
+      "seed": 204,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "legend_text_2",
-      "x": 1245,
-      "y": 164,
-      "width": 220,
-      "height": 28,
+      "x": 1453,
+      "y": 172,
+      "width": 250,
+      "height": 32,
       "text": "真实输入",
-      "fontSize": 17,
+      "fontSize": 18,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "left",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "legend_3",
-      "x": 1450,
-      "y": 165,
-      "width": 42,
-      "height": 26,
+      "x": 1735,
+      "y": 174,
+      "width": 46,
+      "height": 28,
       "strokeColor": "#2f9e44",
       "backgroundColor": "#b2f2bb",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 105,
+      "seed": 205,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "legend_text_3",
-      "x": 1505,
-      "y": 164,
-      "width": 220,
-      "height": 28,
+      "x": 1793,
+      "y": 172,
+      "width": 250,
+      "height": 32,
       "text": "实际输出",
-      "fontSize": 17,
+      "fontSize": 18,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "left",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "legend_4",
-      "x": 1735,
-      "y": 165,
-      "width": 42,
-      "height": 26,
+      "x": 2070,
+      "y": 174,
+      "width": 46,
+      "height": 28,
       "strokeColor": "#c92a2a",
       "backgroundColor": "#ffc9c9",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 106,
+      "seed": 206,
       "opacity": 100,
       "strokeStyle": "dashed"
     },
     {
       "type": "text",
       "id": "legend_text_4",
-      "x": 1790,
-      "y": 164,
-      "width": 220,
-      "height": 28,
+      "x": 2128,
+      "y": 172,
+      "width": 250,
+      "height": 32,
       "text": "预留未启用",
-      "fontSize": 17,
+      "fontSize": 18,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "left",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "group_input",
       "x": 60,
-      "y": 230,
-      "width": 310,
-      "height": 1160,
+      "y": 250,
+      "width": 380,
+      "height": 1630,
       "strokeColor": "#e8590c",
       "backgroundColor": "#fff4e6",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 107,
+      "seed": 207,
       "opacity": 52
     },
     {
       "type": "text",
       "id": "group_input_title",
       "x": 78,
-      "y": 244,
-      "width": 274,
-      "height": 35,
+      "y": 262,
+      "width": 344,
+      "height": 42,
       "text": "① 真实输入",
-      "fontSize": 23,
+      "fontSize": 25,
       "fontFamily": 1,
       "strokeColor": "#e8590c",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
-      "id": "group_esp",
-      "x": 410,
-      "y": 230,
-      "width": 590,
-      "height": 1160,
+      "id": "group_edge",
+      "x": 480,
+      "y": 250,
+      "width": 760,
+      "height": 1630,
       "strokeColor": "#1971c2",
       "backgroundColor": "#e7f5ff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 108,
+      "seed": 208,
       "opacity": 52
     },
     {
       "type": "text",
-      "id": "group_esp_title",
-      "x": 428,
-      "y": 244,
-      "width": 554,
-      "height": 35,
+      "id": "group_edge_title",
+      "x": 498,
+      "y": 262,
+      "width": 724,
+      "height": 42,
       "text": "② ESP32-S3 边缘端",
-      "fontSize": 23,
+      "fontSize": 25,
       "fontFamily": 1,
       "strokeColor": "#1971c2",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
-      "id": "group_lan",
-      "x": 1040,
-      "y": 230,
-      "width": 250,
-      "height": 1160,
+      "id": "group_channel",
+      "x": 1280,
+      "y": 250,
+      "width": 300,
+      "height": 1630,
       "strokeColor": "#862e9c",
       "backgroundColor": "#f8f0fc",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 109,
+      "seed": 209,
       "opacity": 52
     },
     {
       "type": "text",
-      "id": "group_lan_title",
-      "x": 1058,
-      "y": 244,
-      "width": 214,
-      "height": 35,
+      "id": "group_channel_title",
+      "x": 1298,
+      "y": 262,
+      "width": 264,
+      "height": 42,
       "text": "③ 数据通道",
-      "fontSize": 23,
+      "fontSize": 25,
       "fontFamily": 1,
       "strokeColor": "#862e9c",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "group_ai",
-      "x": 1330,
-      "y": 230,
-      "width": 660,
-      "height": 1160,
+      "x": 1620,
+      "y": 250,
+      "width": 930,
+      "height": 1630,
       "strokeColor": "#862e9c",
       "backgroundColor": "#f8f0fc",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 110,
+      "seed": 210,
       "opacity": 52
     },
     {
       "type": "text",
       "id": "group_ai_title",
-      "x": 1348,
-      "y": 244,
-      "width": 624,
-      "height": 35,
+      "x": 1638,
+      "y": 262,
+      "width": 894,
+      "height": 42,
       "text": "④ Mac + SDK / Agent / Tool",
-      "fontSize": 23,
+      "fontSize": 25,
       "fontFamily": 1,
       "strokeColor": "#862e9c",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
-      "id": "group_out",
-      "x": 2030,
-      "y": 230,
-      "width": 330,
-      "height": 1160,
+      "id": "group_output",
+      "x": 2590,
+      "y": 250,
+      "width": 650,
+      "height": 1630,
       "strokeColor": "#2f9e44",
       "backgroundColor": "#ebfbee",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 111,
+      "seed": 211,
       "opacity": 52
     },
     {
       "type": "text",
-      "id": "group_out_title",
-      "x": 2048,
-      "y": 244,
-      "width": 294,
-      "height": 35,
+      "id": "group_output_title",
+      "x": 2608,
+      "y": 262,
+      "width": 614,
+      "height": 42,
       "text": "⑤ 实际输出",
-      "fontSize": 23,
+      "fontSize": 25,
       "fontFamily": 1,
       "strokeColor": "#2f9e44",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "ellipse",
       "id": "input_presence",
-      "x": 95,
-      "y": 330,
-      "width": 240,
-      "height": 135,
+      "x": 110,
+      "y": 350,
+      "width": 280,
+      "height": 150,
       "strokeColor": "#e8590c",
       "backgroundColor": "#ffec99",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 112
+      "seed": 212
     },
     {
       "type": "text",
       "id": "input_presence_text",
-      "x": 105,
-      "y": 337,
-      "width": 220,
-      "height": 121,
-      "text": "儿童行为\n在座 · 移动 · 离开",
-      "fontSize": 21,
+      "x": 152.0,
+      "y": 377.0,
+      "width": 196.0,
+      "height": 96.0,
+      "text": "儿童行为\n在座 / 移动 / 离开",
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "ellipse",
       "id": "input_environment",
-      "x": 95,
-      "y": 540,
-      "width": 240,
-      "height": 135,
+      "x": 110,
+      "y": 630,
+      "width": 280,
+      "height": 150,
       "strokeColor": "#e8590c",
       "backgroundColor": "#ffec99",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 113
+      "seed": 213
     },
     {
       "type": "text",
       "id": "input_environment_text",
-      "x": 105,
-      "y": 547,
-      "width": 220,
-      "height": 121,
-      "text": "桌面环境\n光照 · 温度 · 湿度",
-      "fontSize": 21,
+      "x": 152.0,
+      "y": 657.0,
+      "width": 196.0,
+      "height": 96.0,
+      "text": "桌面环境\n光照 / 温度 / 湿度",
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "ellipse",
       "id": "input_voice",
-      "x": 95,
-      "y": 750,
-      "width": 240,
-      "height": 155,
+      "x": 110,
+      "y": 930,
+      "width": 280,
+      "height": 150,
       "strokeColor": "#e8590c",
       "backgroundColor": "#ffec99",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 114
+      "seed": 214
     },
     {
       "type": "text",
       "id": "input_voice_text",
-      "x": 105,
-      "y": 757,
-      "width": 220,
-      "height": 141,
+      "x": 152.0,
+      "y": 957.0,
+      "width": 196.0,
+      "height": 96.0,
       "text": "长按 IO10\n儿童真实语音",
-      "fontSize": 22,
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "ellipse",
       "id": "input_repo",
-      "x": 95,
-      "y": 1110,
-      "width": 240,
-      "height": 135,
+      "x": 110,
+      "y": 1510,
+      "width": 280,
+      "height": 140,
       "strokeColor": "#e8590c",
       "backgroundColor": "#ffec99",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 115
+      "seed": 215
     },
     {
       "type": "text",
       "id": "input_repo_text",
-      "x": 105,
-      "y": 1117,
-      "width": 220,
-      "height": 121,
-      "text": "Git 提交\n代码 · 文档 · 素材",
-      "fontSize": 21,
+      "x": 152.0,
+      "y": 1535.2,
+      "width": 196.0,
+      "height": 89.6,
+      "text": "Git 提交\n代码 / 文档 / 素材",
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "esp_sdk",
-      "x": 455,
-      "y": 315,
-      "width": 225,
-      "height": 120,
+      "x": 520,
+      "y": 340,
+      "width": 300,
+      "height": 150,
       "strokeColor": "#862e9c",
       "backgroundColor": "#d0bfff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 116,
+      "seed": 216,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "esp_sdk_text",
-      "x": 465,
-      "y": 322,
-      "width": 205,
-      "height": 106,
-      "text": "SDK / HAL\nGPIO · ADC · I²C\nSPI · I2S · Wi-Fi",
-      "fontSize": 18,
+      "x": 538,
+      "y": 356,
+      "width": 264,
+      "height": 118,
+      "text": "MicroPython SDK / HAL\nGPIO · ADC · I²C\nSPI · I2S · Wi-Fi",
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "esp_main",
-      "x": 735,
-      "y": 315,
-      "width": 225,
-      "height": 120,
+      "x": 880,
+      "y": 340,
+      "width": 300,
+      "height": 150,
       "strokeColor": "#1971c2",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 117,
+      "seed": 217,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "esp_main_text",
-      "x": 745,
-      "y": 322,
-      "width": 205,
-      "height": 106,
-      "text": "main.py（团队）\n协作主循环\n看门狗 · 显示调度",
-      "fontSize": 18,
+      "x": 898,
+      "y": 356,
+      "width": 264,
+      "height": 118,
+      "text": "main.py（团队）\n协作主循环\n显示调度 · 看门狗",
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "esp_fusion",
-      "x": 455,
-      "y": 500,
-      "width": 225,
-      "height": 125,
+      "x": 520,
+      "y": 590,
+      "width": 300,
+      "height": 150,
       "strokeColor": "#1971c2",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 118,
+      "seed": 218,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "esp_fusion_text",
-      "x": 465,
-      "y": 507,
-      "width": 205,
-      "height": 111,
-      "text": "Tool：传感器融合\nPIR + VL53L0X\nPRESENT / AWAY",
-      "fontSize": 18,
+      "x": 538,
+      "y": 606,
+      "width": 264,
+      "height": 118,
+      "text": "传感器融合 Tool\nPIR + VL53L0X\nPRESENT / AWAY",
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "esp_study",
-      "x": 735,
-      "y": 500,
-      "width": 225,
-      "height": 125,
+      "x": 880,
+      "y": 590,
+      "width": 300,
+      "height": 150,
       "strokeColor": "#1971c2",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 119,
+      "seed": 219,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "esp_study_text",
-      "x": 745,
-      "y": 507,
-      "width": 205,
-      "height": 111,
-      "text": "Tool：学习系统\n计时 · 目标 · 成长\n体力 · 持久化",
-      "fontSize": 18,
+      "x": 898,
+      "y": 606,
+      "width": 264,
+      "height": 118,
+      "text": "学习系统 Tool\n计时 · 每日目标 · 成长\n体力 · Flash 持久化",
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "esp_audio",
-      "x": 455,
-      "y": 745,
-      "width": 225,
-      "height": 125,
+      "x": 520,
+      "y": 930,
+      "width": 300,
+      "height": 150,
       "strokeColor": "#1971c2",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 120,
+      "seed": 220,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "esp_audio_text",
-      "x": 465,
-      "y": 752,
-      "width": 205,
-      "height": 111,
-      "text": "Tool：AudioManager\n麦克风 RX\n扬声器 TX 仲裁",
-      "fontSize": 18,
+      "x": 538,
+      "y": 946,
+      "width": 264,
+      "height": 118,
+      "text": "AudioManager Tool\n麦克风 RX / 扬声器 TX\n统一 I2S 仲裁",
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "esp_voice",
-      "x": 735,
-      "y": 745,
-      "width": 225,
-      "height": 125,
+      "x": 880,
+      "y": 930,
+      "width": 300,
+      "height": 150,
       "strokeColor": "#1971c2",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 121,
+      "seed": 221,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "esp_voice_text",
-      "x": 745,
-      "y": 752,
-      "width": 205,
-      "height": 111,
-      "text": "Tool：VoiceQAClient\n录音 · Wi-Fi\n协议状态机",
-      "fontSize": 18,
+      "x": 898,
+      "y": 946,
+      "width": 264,
+      "height": 118,
+      "text": "VoiceQAClient Tool\n录音 · Wi-Fi · 重连\n协议状态机",
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "esp_reminder",
-      "x": 455,
-      "y": 955,
-      "width": 225,
-      "height": 125,
+      "x": 520,
+      "y": 1210,
+      "width": 300,
+      "height": 150,
       "strokeColor": "#1971c2",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 122,
+      "seed": 222,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "esp_reminder_text",
-      "x": 465,
-      "y": 962,
-      "width": 205,
-      "height": 111,
-      "text": "Tool：本地提醒\n喝水休息\n低光照 + 动画",
-      "fontSize": 18,
+      "x": 538,
+      "y": 1226,
+      "width": 264,
+      "height": 118,
+      "text": "本地提醒 Tool\n喝水休息 / 低光照\nPCM 语音 + LCD 动画",
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "esp_action",
-      "x": 735,
-      "y": 955,
-      "width": 225,
-      "height": 125,
+      "x": 880,
+      "y": 1210,
+      "width": 300,
+      "height": 150,
       "strokeColor": "#1971c2",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 123,
+      "seed": 223,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "esp_action_text",
-      "x": 745,
-      "y": 962,
-      "width": 205,
-      "height": 111,
-      "text": "Tool：设备动作\n白名单校验 · 去重\n写入每日目标",
-      "fontSize": 18,
+      "x": 898,
+      "y": 1226,
+      "width": 264,
+      "height": 118,
+      "text": "设备动作 Tool\n白名单校验 · 去重\n写入每日学习目标",
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
-      "id": "lan_discovery",
-      "x": 1070,
-      "y": 330,
-      "width": 190,
-      "height": 120,
+      "id": "channel_discovery",
+      "x": 1315,
+      "y": 350,
+      "width": 230,
+      "height": 140,
       "strokeColor": "#1971c2",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 124,
+      "seed": 224,
       "opacity": 100
     },
     {
       "type": "text",
-      "id": "lan_discovery_text",
-      "x": 1080,
-      "y": 337,
-      "width": 170,
-      "height": 106,
-      "text": "UDP 8767\n服务发现\n北京时间",
-      "fontSize": 18,
+      "id": "channel_discovery_text",
+      "x": 1333,
+      "y": 366,
+      "width": 194,
+      "height": 108,
+      "text": "UDP 8767\n发现 Mac 服务\n同步北京时间",
+      "fontSize": 19,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
-      "id": "lan_voice",
-      "x": 1070,
-      "y": 690,
-      "width": 190,
-      "height": 155,
+      "id": "channel_voice",
+      "x": 1315,
+      "y": 930,
+      "width": 230,
+      "height": 170,
       "strokeColor": "#1971c2",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 125,
+      "seed": 225,
       "opacity": 100
     },
     {
       "type": "text",
-      "id": "lan_voice_text",
-      "x": 1080,
-      "y": 697,
-      "width": 170,
-      "height": 141,
+      "id": "channel_voice_text",
+      "x": 1333,
+      "y": 946,
+      "width": 194,
+      "height": 138,
       "text": "TCP 8766\nVQW1 / VA01\nWAV · JSON · PCM16\nDevice Token",
-      "fontSize": 17,
+      "fontSize": 15,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
-      "id": "lan_event",
-      "x": 1070,
-      "y": 1040,
-      "width": 190,
-      "height": 135,
+      "id": "channel_event",
+      "x": 1315,
+      "y": 1450,
+      "width": 230,
+      "height": 145,
       "strokeColor": "#1971c2",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 126,
+      "seed": 226,
       "opacity": 100
     },
     {
       "type": "text",
-      "id": "lan_event_text",
-      "x": 1080,
-      "y": 1047,
-      "width": 170,
-      "height": 121,
+      "id": "channel_event_text",
+      "x": 1333,
+      "y": 1466,
+      "width": 194,
+      "height": 113,
       "text": "TCP 8766\nEVT1 / EV01\n行为与传感器 JSON",
-      "fontSize": 17,
+      "fontSize": 18,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "mac_server",
-      "x": 1380,
-      "y": 315,
-      "width": 225,
-      "height": 110,
+      "x": 1670,
+      "y": 340,
+      "width": 320,
+      "height": 150,
       "strokeColor": "#1971c2",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 127,
+      "seed": 227,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "mac_server_text",
-      "x": 1390,
-      "y": 322,
-      "width": 205,
-      "height": 96,
-      "text": "Tool：Voice Server\n鉴权 · 并发 · 编排",
-      "fontSize": 18,
+      "x": 1688,
+      "y": 356,
+      "width": 284,
+      "height": 118,
+      "text": "Voice Server Tool\n鉴权 · 并发 · 编排\n事件接收",
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "mimo_asr",
-      "x": 1710,
-      "y": 315,
-      "width": 225,
-      "height": 110,
+      "x": 2180,
+      "y": 340,
+      "width": 320,
+      "height": 150,
       "strokeColor": "#862e9c",
       "backgroundColor": "#d0bfff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 128,
+      "seed": 228,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "mimo_asr_text",
-      "x": 1720,
-      "y": 322,
-      "width": 205,
-      "height": 96,
-      "text": "MiMo v2.5 ASR\nWAV → transcript",
-      "fontSize": 19,
+      "x": 2198,
+      "y": 356,
+      "width": 284,
+      "height": 118,
+      "text": "MiMo v2.5 ASR\nWAV → 识别文字",
+      "fontSize": 21,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "diamond",
       "id": "tool_router",
-      "x": 1510,
-      "y": 500,
-      "width": 280,
-      "height": 150,
+      "x": 1860,
+      "y": 590,
+      "width": 440,
+      "height": 190,
       "strokeColor": "#1971c2",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 129
+      "seed": 229
     },
     {
       "type": "text",
       "id": "tool_router_text",
-      "x": 1520,
-      "y": 507,
-      "width": 260,
-      "height": 136,
-      "text": "Tool Router\n普通学习问题？\n还是设备设置？",
-      "fontSize": 20,
+      "x": 1961.2,
+      "y": 628.0,
+      "width": 237.6,
+      "height": 114.0,
+      "text": "Tool Router\n学习问答\n或设备设置？",
+      "fontSize": 22,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "mimo_agent",
-      "x": 1380,
-      "y": 730,
-      "width": 225,
-      "height": 120,
+      "x": 1670,
+      "y": 920,
+      "width": 320,
+      "height": 160,
       "strokeColor": "#862e9c",
       "backgroundColor": "#d0bfff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 130,
+      "seed": 230,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "mimo_agent_text",
-      "x": 1390,
-      "y": 737,
-      "width": 205,
-      "height": 106,
-      "text": "MiMo v2.5 Pro Agent\n团队 Prompt\n结构化 answer JSON",
-      "fontSize": 18,
+      "x": 1688,
+      "y": 936,
+      "width": 284,
+      "height": 128,
+      "text": "MiMo v2.5 Pro Agent\n团队 Prompt\n结构化答案 JSON",
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "mimo_tts",
-      "x": 1710,
-      "y": 730,
-      "width": 225,
-      "height": 120,
+      "x": 2180,
+      "y": 920,
+      "width": 320,
+      "height": 160,
       "strokeColor": "#862e9c",
       "backgroundColor": "#d0bfff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 131,
+      "seed": 231,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "mimo_tts_text",
-      "x": 1720,
-      "y": 737,
-      "width": 205,
-      "height": 106,
-      "text": "MiMo v2.5 TTS\n文本 → PCM24\n团队重采样 PCM16",
-      "fontSize": 18,
+      "x": 2198,
+      "y": 936,
+      "width": 284,
+      "height": 128,
+      "text": "MiMo v2.5 TTS\n文字 → PCM24\n团队重采样 PCM16",
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "command_tool",
-      "x": 1510,
-      "y": 930,
-      "width": 280,
-      "height": 120,
+      "x": 1860,
+      "y": 1190,
+      "width": 440,
+      "height": 160,
       "strokeColor": "#1971c2",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 132,
+      "seed": 232,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "command_tool_text",
-      "x": 1520,
-      "y": 937,
-      "width": 260,
-      "height": 106,
-      "text": "Tool：目标指令解析\nset_daily_goal_seconds\n5 分钟～24 小时",
-      "fontSize": 18,
+      "x": 1878,
+      "y": 1206,
+      "width": 404,
+      "height": 128,
+      "text": "目标指令解析 Tool\n“每日目标改为 2 小时”\nset_daily_goal_seconds",
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "event_sink",
-      "x": 1380,
-      "y": 1120,
-      "width": 225,
-      "height": 120,
+      "x": 1670,
+      "y": 1460,
+      "width": 320,
+      "height": 160,
       "strokeColor": "#1971c2",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 133,
+      "seed": 233,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "event_sink_text",
-      "x": 1390,
-      "y": 1127,
-      "width": 205,
-      "height": 106,
-      "text": "Tool：Event Sink\n本地 JSONL 优先\nPyMySQL + TLS",
-      "fontSize": 18,
+      "x": 1688,
+      "y": 1476,
+      "width": 284,
+      "height": 128,
+      "text": "Event Sink Tool\n本地 JSONL 优先\nPyMySQL + TLS",
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "repo_sync",
-      "x": 1710,
-      "y": 1120,
-      "width": 225,
-      "height": 120,
+      "x": 2180,
+      "y": 1460,
+      "width": 320,
+      "height": 160,
       "strokeColor": "#1971c2",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 134,
+      "seed": 234,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "repo_sync_text",
-      "x": 1720,
-      "y": 1127,
-      "width": 205,
-      "height": 106,
-      "text": "Tool：Repository Sync\n源码快照\n素材 SHA-256 清单",
-      "fontSize": 18,
+      "x": 2198,
+      "y": 1476,
+      "width": 284,
+      "height": 128,
+      "text": "Repository Sync Tool\n源码快照\n素材 SHA-256 清单",
+      "fontSize": 20,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "output_display",
-      "x": 2075,
-      "y": 320,
-      "width": 245,
-      "height": 150,
+      "x": 2670,
+      "y": 340,
+      "width": 490,
+      "height": 180,
       "strokeColor": "#2f9e44",
       "backgroundColor": "#b2f2bb",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 135,
+      "seed": 235,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "output_display_text",
-      "x": 2085,
-      "y": 327,
-      "width": 225,
-      "height": 136,
-      "text": "OLED + LCD\n北京时间 · 环境\n宠物 · 距离 · 时长\n成长值",
-      "fontSize": 19,
+      "x": 2688,
+      "y": 356,
+      "width": 454,
+      "height": 148,
+      "text": "OLED + LCD\n北京时间 · 环境数据\n宠物 · 距离 · 学习时长\n成长值",
+      "fontSize": 22,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "output_speaker",
-      "x": 2075,
-      "y": 680,
-      "width": 245,
-      "height": 150,
+      "x": 2670,
+      "y": 910,
+      "width": 490,
+      "height": 180,
       "strokeColor": "#2f9e44",
       "backgroundColor": "#b2f2bb",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 136,
+      "seed": 236,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "output_speaker_text",
-      "x": 2085,
-      "y": 687,
-      "width": 225,
-      "height": 136,
-      "text": "I2S 扬声器\n本地提醒\nAI 回答\n设置确认",
-      "fontSize": 20,
+      "x": 2688,
+      "y": 926,
+      "width": 454,
+      "height": 148,
+      "text": "I2S 扬声器\n本地提醒 · AI 回答\n设置确认语音",
+      "fontSize": 22,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "output_flash",
-      "x": 2075,
-      "y": 910,
-      "width": 245,
+      "x": 2670,
+      "y": 1180,
+      "width": 490,
+      "height": 180,
+      "strokeColor": "#2f9e44",
+      "backgroundColor": "#b2f2bb",
+      "fillStyle": "hachure",
+      "strokeWidth": 2,
+      "roughness": 1,
+      "seed": 237,
+      "opacity": 100
+    },
+    {
+      "type": "text",
+      "id": "output_flash_text",
+      "x": 2688,
+      "y": 1196,
+      "width": 454,
+      "height": 148,
+      "text": "ESP32 Flash\npet_state.json · pet_config.json\nstate.txt",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "strokeColor": "#1e1e1e",
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "output_tidb",
+      "x": 2670,
+      "y": 1430,
+      "width": 490,
       "height": 150,
       "strokeColor": "#2f9e44",
       "backgroundColor": "#b2f2bb",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 137,
+      "seed": 238,
       "opacity": 100
     },
     {
       "type": "text",
-      "id": "output_flash_text",
-      "x": 2085,
-      "y": 917,
-      "width": 225,
-      "height": 136,
-      "text": "ESP32 Flash\npet_state.json\npet_config.json\nstate.txt",
-      "fontSize": 18,
+      "id": "output_tidb_text",
+      "x": 2688,
+      "y": 1446,
+      "width": 454,
+      "height": 118,
+      "text": "TiDB Cloud\n行为 · 问答 · 代码快照\n素材清单",
+      "fontSize": 21,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
-      "id": "output_tidb",
-      "x": 2075,
-      "y": 1090,
-      "width": 245,
+      "id": "output_github",
+      "x": 2670,
+      "y": 1610,
+      "width": 490,
       "height": 110,
       "strokeColor": "#2f9e44",
       "backgroundColor": "#b2f2bb",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 138,
-      "opacity": 100
-    },
-    {
-      "type": "text",
-      "id": "output_tidb_text",
-      "x": 2085,
-      "y": 1097,
-      "width": 225,
-      "height": 96,
-      "text": "TiDB Cloud\n行为 · 问答\n代码快照 · 素材清单",
-      "fontSize": 18,
-      "fontFamily": 1,
-      "strokeColor": "#1e1e1e",
-      "textAlign": "center",
-      "verticalAlign": "middle"
-    },
-    {
-      "type": "rectangle",
-      "id": "output_github",
-      "x": 2075,
-      "y": 1215,
-      "width": 245,
-      "height": 75,
-      "strokeColor": "#2f9e44",
-      "backgroundColor": "#b2f2bb",
-      "fillStyle": "hachure",
-      "strokeWidth": 2,
-      "roughness": 1,
-      "seed": 139,
+      "seed": 239,
       "opacity": 100
     },
     {
       "type": "text",
       "id": "output_github_text",
-      "x": 2085,
-      "y": 1222,
-      "width": 225,
-      "height": 61,
+      "x": 2688,
+      "y": 1626,
+      "width": 454,
+      "height": 78,
       "text": "GitHub\n源码 · 文档 · 素材",
-      "fontSize": 18,
+      "fontSize": 21,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "rectangle",
       "id": "output_stack",
-      "x": 2075,
-      "y": 1310,
-      "width": 245,
-      "height": 55,
+      "x": 2670,
+      "y": 1750,
+      "width": 490,
+      "height": 70,
       "strokeColor": "#c92a2a",
       "backgroundColor": "#ffc9c9",
       "fillStyle": "hachure",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 140,
+      "seed": 240,
       "opacity": 100,
       "strokeStyle": "dashed"
     },
     {
       "type": "text",
       "id": "output_stack_text",
-      "x": 2085,
-      "y": 1317,
-      "width": 225,
-      "height": 41,
+      "x": 2688,
+      "y": 1766,
+      "width": 454,
+      "height": 38,
       "text": "TiDB Agent Stack：接口预留，当前未配置",
-      "fontSize": 16,
+      "fontSize": 17,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "middle"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "arrow",
@@ -1182,34 +1223,34 @@
       "strokeColor": "#e8590c",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 141
+      "seed": 241
     },
     {
       "type": "arrow",
-      "id": "a_env_sdk",
+      "id": "a_environment_sdk",
       "from": "input_environment",
       "to": "esp_sdk",
       "strokeColor": "#e8590c",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 142,
+      "seed": 242,
       "absolutePoints": true,
       "points": [
         [
-          335,
-          608
-        ],
-        [
           390,
-          608
-        ],
-        [
-          390,
-          405
+          705
         ],
         [
           455,
-          405
+          705
+        ],
+        [
+          455,
+          465
+        ],
+        [
+          520,
+          465
         ]
       ]
     },
@@ -1221,7 +1262,7 @@
       "strokeColor": "#1971c2",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 143
+      "seed": 243
     },
     {
       "type": "arrow",
@@ -1231,24 +1272,24 @@
       "strokeColor": "#1971c2",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 144,
+      "seed": 244,
       "absolutePoints": true,
       "points": [
         [
-          735,
-          390
+          880,
+          415
         ],
         [
-          705,
-          390
+          850,
+          415
         ],
         [
-          705,
-          560
+          850,
+          665
         ],
         [
-          680,
-          560
+          820,
+          665
         ]
       ]
     },
@@ -1260,7 +1301,7 @@
       "strokeColor": "#1971c2",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 145
+      "seed": 245
     },
     {
       "type": "arrow",
@@ -1270,86 +1311,89 @@
       "strokeColor": "#2f9e44",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 146,
+      "seed": 246,
       "absolutePoints": true,
       "points": [
         [
-          960,
-          555
+          1180,
+          665
         ],
         [
-          1015,
-          555
+          1255,
+          665
         ],
         [
-          1015,
-          215
+          1255,
+          225
         ],
         [
-          2015,
-          215
+          2630,
+          225
         ],
         [
-          2015,
-          395
+          2630,
+          430
         ],
         [
-          2075,
-          395
+          2670,
+          430
         ]
       ]
     },
     {
       "type": "text",
-      "id": "l_sensor",
-      "x": 365,
-      "y": 345,
-      "width": 100,
+      "id": "label_gpio",
+      "x": 398,
+      "y": 395,
+      "width": 120,
       "height": 28,
       "text": "GPIO / I²C",
-      "fontSize": 14,
+      "fontSize": 15,
       "fontFamily": 1,
       "strokeColor": "#e8590c",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "text",
-      "id": "l_state",
-      "x": 660,
-      "y": 535,
-      "width": 115,
+      "id": "label_fusion",
+      "x": 815,
+      "y": 635,
+      "width": 95,
       "height": 28,
       "text": "融合状态",
       "fontSize": 14,
       "fontFamily": 1,
       "strokeColor": "#1971c2",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "text",
-      "id": "l_ui",
-      "x": 1550,
-      "y": 198,
-      "width": 260,
+      "id": "label_offline",
+      "x": 1880,
+      "y": 207,
+      "width": 310,
       "height": 28,
-      "text": "板端实时显示（不依赖云端）",
-      "fontSize": 15,
+      "text": "板端实时显示（离线可用）",
+      "fontSize": 16,
       "fontFamily": 1,
       "strokeColor": "#2f9e44",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "arrow",
-      "id": "a_voice_audio",
+      "id": "a_input_audio",
       "from": "input_voice",
       "to": "esp_audio",
       "strokeColor": "#862e9c",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 147
+      "seed": 247
     },
     {
       "type": "arrow",
@@ -1359,44 +1403,44 @@
       "strokeColor": "#1971c2",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 148
+      "seed": 248
     },
     {
       "type": "arrow",
-      "id": "a_voice_lan",
+      "id": "a_voice_channel",
       "from": "esp_voice",
-      "to": "lan_voice",
+      "to": "channel_voice",
       "strokeColor": "#862e9c",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 149
+      "seed": 249
     },
     {
       "type": "arrow",
-      "id": "a_lan_server",
-      "from": "lan_voice",
+      "id": "a_channel_server",
+      "from": "channel_voice",
       "to": "mac_server",
       "strokeColor": "#862e9c",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 150,
+      "seed": 250,
       "absolutePoints": true,
       "points": [
         [
-          1260,
-          765
+          1545,
+          1015
         ],
         [
-          1300,
-          765
+          1600,
+          1015
         ],
         [
-          1300,
-          370
+          1600,
+          415
         ],
         [
-          1380,
-          370
+          1670,
+          415
         ]
       ]
     },
@@ -1408,7 +1452,7 @@
       "strokeColor": "#862e9c",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 151
+      "seed": 251
     },
     {
       "type": "arrow",
@@ -1418,7 +1462,7 @@
       "strokeColor": "#862e9c",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 152
+      "seed": 252
     },
     {
       "type": "arrow",
@@ -1428,7 +1472,7 @@
       "strokeColor": "#862e9c",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 153
+      "seed": 253
     },
     {
       "type": "arrow",
@@ -1438,7 +1482,7 @@
       "strokeColor": "#862e9c",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 154
+      "seed": 254
     },
     {
       "type": "arrow",
@@ -1448,41 +1492,43 @@
       "strokeColor": "#2f9e44",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 155
+      "seed": 255
     },
     {
       "type": "text",
-      "id": "l_mic",
-      "x": 350,
-      "y": 770,
-      "width": 115,
+      "id": "label_i2s",
+      "x": 402,
+      "y": 965,
+      "width": 110,
       "height": 28,
       "text": "I2S PCM",
       "fontSize": 14,
       "fontFamily": 1,
       "strokeColor": "#862e9c",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "text",
-      "id": "l_wav",
-      "x": 965,
-      "y": 715,
-      "width": 105,
+      "id": "label_wav",
+      "x": 1190,
+      "y": 950,
+      "width": 125,
       "height": 28,
-      "text": "WAV + JSON",
+      "text": "WAV + 上下文",
       "fontSize": 14,
       "fontFamily": 1,
       "strokeColor": "#862e9c",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "text",
-      "id": "l_asr",
-      "x": 1610,
-      "y": 342,
+      "id": "label_https",
+      "x": 2030,
+      "y": 365,
       "width": 100,
       "height": 28,
       "text": "HTTPS",
@@ -1490,49 +1536,53 @@
       "fontFamily": 1,
       "strokeColor": "#862e9c",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "text",
-      "id": "l_question",
-      "x": 1340,
-      "y": 665,
-      "width": 155,
+      "id": "label_question",
+      "x": 1645,
+      "y": 845,
+      "width": 190,
       "height": 28,
       "text": "普通学习问题",
       "fontSize": 14,
       "fontFamily": 1,
       "strokeColor": "#862e9c",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "text",
-      "id": "l_answer",
-      "x": 1605,
-      "y": 762,
-      "width": 105,
+      "id": "label_answer",
+      "x": 2000,
+      "y": 955,
+      "width": 160,
       "height": 28,
-      "text": "answer JSON",
+      "text": "答案 JSON",
       "fontSize": 14,
       "fontFamily": 1,
       "strokeColor": "#862e9c",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "text",
-      "id": "l_pcm",
-      "x": 1935,
-      "y": 750,
-      "width": 140,
+      "id": "label_pcm",
+      "x": 2505,
+      "y": 945,
+      "width": 160,
       "height": 28,
       "text": "VA01 / PCM16",
       "fontSize": 14,
       "fontFamily": 1,
       "strokeColor": "#2f9e44",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "arrow",
@@ -1542,7 +1592,7 @@
       "strokeColor": "#1971c2",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 156
+      "seed": 256
     },
     {
       "type": "arrow",
@@ -1552,32 +1602,32 @@
       "strokeColor": "#1971c2",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 157,
+      "seed": 257,
       "absolutePoints": true,
       "points": [
         [
-          1510,
-          990
+          1860,
+          1270
         ],
         [
-          1310,
-          990
+          1600,
+          1270
         ],
         [
-          1310,
-          900
+          1600,
+          1165
         ],
         [
-          1015,
-          900
+          1260,
+          1165
         ],
         [
-          1015,
-          1015
+          1260,
+          1285
         ],
         [
-          960,
-          1015
+          1180,
+          1285
         ]
       ]
     },
@@ -1589,76 +1639,64 @@
       "strokeColor": "#2f9e44",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 158,
+      "seed": 258,
       "absolutePoints": true,
       "points": [
         [
-          960,
-          1015
+          1180,
+          1285
         ],
         [
-          1018,
-          1015
+          1260,
+          1285
         ],
         [
-          1018,
-          895
+          1260,
+          1390
         ],
         [
-          2015,
-          895
+          2600,
+          1390
         ],
         [
-          2015,
-          985
+          2600,
+          1270
         ],
         [
-          2075,
-          985
+          2670,
+          1270
         ]
       ]
     },
     {
       "type": "text",
-      "id": "l_command",
-      "x": 1500,
-      "y": 870,
-      "width": 300,
-      "height": 28,
-      "text": "“把每日目标改为两小时”",
-      "fontSize": 15,
-      "fontFamily": 1,
-      "strokeColor": "#1971c2",
-      "textAlign": "center",
-      "verticalAlign": "top"
-    },
-    {
-      "type": "text",
-      "id": "l_action",
-      "x": 1100,
-      "y": 865,
-      "width": 190,
+      "id": "label_action",
+      "x": 1320,
+      "y": 1137,
+      "width": 220,
       "height": 28,
       "text": "device_action JSON",
       "fontSize": 14,
       "fontFamily": 1,
       "strokeColor": "#1971c2",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "text",
-      "id": "l_config",
-      "x": 1640,
-      "y": 867,
-      "width": 250,
+      "id": "label_flash",
+      "x": 2320,
+      "y": 1362,
+      "width": 220,
       "height": 28,
       "text": "校验后写入 Flash",
       "fontSize": 14,
       "fontFamily": 1,
       "strokeColor": "#2f9e44",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "arrow",
@@ -1668,28 +1706,28 @@
       "strokeColor": "#1971c2",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 159,
+      "seed": 259,
       "absolutePoints": true,
       "points": [
         [
-          850,
-          435
+          1030,
+          490
         ],
         [
-          850,
-          670
+          1210,
+          490
         ],
         [
-          710,
-          670
+          1210,
+          1140
         ],
         [
-          710,
-          1015
+          670,
+          1140
         ],
         [
-          680,
-          1015
+          670,
+          1210
         ]
       ]
     },
@@ -1701,126 +1739,127 @@
       "strokeColor": "#2f9e44",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 160,
+      "seed": 260,
       "absolutePoints": true,
       "points": [
         [
-          680,
-          1015
+          820,
+          1285
         ],
         [
-          700,
-          1015
+          850,
+          1285
         ],
         [
-          700,
-          660
+          850,
+          1125
         ],
         [
-          2015,
-          660
+          2610,
+          1125
         ],
         [
-          2015,
-          755
+          2610,
+          1000
         ],
         [
-          2075,
-          755
+          2670,
+          1000
         ]
       ]
     },
     {
       "type": "text",
-      "id": "l_local_audio",
-      "x": 1460,
-      "y": 632,
-      "width": 230,
+      "id": "label_local_audio",
+      "x": 1850,
+      "y": 1097,
+      "width": 290,
       "height": 28,
       "text": "本地 PCM + LCD 动画",
       "fontSize": 15,
       "fontFamily": 1,
       "strokeColor": "#2f9e44",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "arrow",
       "id": "a_voice_discovery",
       "from": "esp_voice",
-      "to": "lan_discovery",
+      "to": "channel_discovery",
       "strokeColor": "#1971c2",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 161,
+      "seed": 261,
       "absolutePoints": true,
       "points": [
         [
-          960,
-          790
+          1180,
+          1005
         ],
         [
-          1020,
-          790
+          1255,
+          1005
         ],
         [
-          1020,
-          390
+          1255,
+          420
         ],
         [
-          1070,
-          390
+          1315,
+          420
         ]
       ]
     },
     {
       "type": "arrow",
       "id": "a_discovery_server",
-      "from": "lan_discovery",
+      "from": "channel_discovery",
       "to": "mac_server",
       "strokeColor": "#1971c2",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 162
+      "seed": 262
     },
     {
       "type": "arrow",
       "id": "a_main_event",
       "from": "esp_main",
-      "to": "lan_event",
+      "to": "channel_event",
       "strokeColor": "#2f9e44",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 163,
+      "seed": 263,
       "absolutePoints": true,
       "points": [
         [
-          850,
-          435
+          1030,
+          490
         ],
         [
-          1005,
-          435
+          1260,
+          490
         ],
         [
-          1005,
-          1105
+          1260,
+          1522
         ],
         [
-          1070,
-          1105
+          1315,
+          1522
         ]
       ]
     },
     {
       "type": "arrow",
       "id": "a_event_sink",
-      "from": "lan_event",
+      "from": "channel_event",
       "to": "event_sink",
       "strokeColor": "#2f9e44",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 164
+      "seed": 264
     },
     {
       "type": "arrow",
@@ -1830,20 +1869,24 @@
       "strokeColor": "#2f9e44",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 165,
+      "seed": 265,
       "absolutePoints": true,
       "points": [
         [
-          1490,
-          425
+          1830,
+          490
         ],
         [
-          1490,
-          1080
+          1640,
+          490
         ],
         [
-          1490,
-          1120
+          1640,
+          1540
+        ],
+        [
+          1670,
+          1540
         ]
       ]
     },
@@ -1855,32 +1898,32 @@
       "strokeColor": "#2f9e44",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 166,
+      "seed": 266,
       "absolutePoints": true,
       "points": [
         [
-          1605,
-          1180
+          1990,
+          1540
         ],
         [
-          1645,
-          1180
+          2040,
+          1540
         ],
         [
-          1645,
-          1065
+          2040,
+          1400
         ],
         [
-          2000,
-          1065
+          2600,
+          1400
         ],
         [
-          2000,
-          1145
+          2600,
+          1505
         ],
         [
-          2075,
-          1145
+          2670,
+          1505
         ]
       ]
     },
@@ -1892,87 +1935,91 @@
       "strokeColor": "#c92a2a",
       "strokeWidth": 2,
       "roughness": 1,
-      "seed": 167,
+      "seed": 267,
       "strokeStyle": "dashed",
       "absolutePoints": true,
       "points": [
         [
-          1492,
-          1240
+          1830,
+          1620
         ],
         [
-          1492,
-          1375
+          1830,
+          1840
         ],
         [
-          1995,
-          1375
+          2620,
+          1840
         ],
         [
-          1995,
-          1337
+          2620,
+          1785
         ],
         [
-          2075,
-          1337
+          2670,
+          1785
         ]
       ]
     },
     {
       "type": "text",
-      "id": "l_discovery",
-      "x": 995,
-      "y": 455,
-      "width": 160,
+      "id": "label_discovery",
+      "x": 1235,
+      "y": 500,
+      "width": 180,
       "height": 28,
-      "text": "发现 / 北京时间",
+      "text": "发现 / 时间同步",
       "fontSize": 14,
       "fontFamily": 1,
       "strokeColor": "#1971c2",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "text",
-      "id": "l_telemetry",
-      "x": 1000,
-      "y": 1115,
-      "width": 135,
+      "id": "label_telemetry",
+      "x": 1245,
+      "y": 1490,
+      "width": 115,
       "height": 28,
       "text": "telemetry",
       "fontSize": 14,
       "fontFamily": 1,
       "strokeColor": "#2f9e44",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "text",
-      "id": "l_tls",
-      "x": 1880,
-      "y": 1160,
-      "width": 150,
+      "id": "label_tls",
+      "x": 2410,
+      "y": 1372,
+      "width": 140,
       "height": 28,
       "text": "PyMySQL + TLS",
       "fontSize": 14,
       "fontFamily": 1,
       "strokeColor": "#2f9e44",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "text",
-      "id": "l_optional",
-      "x": 1750,
-      "y": 1342,
-      "width": 180,
+      "id": "label_stack",
+      "x": 2260,
+      "y": 1812,
+      "width": 220,
       "height": 28,
       "text": "可选 HTTP",
       "fontSize": 14,
       "fontFamily": 1,
       "strokeColor": "#c92a2a",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "arrow",
@@ -1982,32 +2029,32 @@
       "strokeColor": "#1971c2",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 168,
+      "seed": 268,
       "absolutePoints": true,
       "points": [
         [
-          335,
-          1175
+          390,
+          1580
         ],
         [
-          400,
-          1175
+          455,
+          1580
         ],
         [
-          400,
-          1270
+          455,
+          1680
         ],
         [
-          1660,
-          1270
+          2140,
+          1680
         ],
         [
-          1660,
-          1180
+          2140,
+          1540
         ],
         [
-          1710,
-          1180
+          2180,
+          1540
         ]
       ]
     },
@@ -2019,7 +2066,26 @@
       "strokeColor": "#2f9e44",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 169
+      "seed": 269,
+      "absolutePoints": true,
+      "points": [
+        [
+          2500,
+          1540
+        ],
+        [
+          2560,
+          1540
+        ],
+        [
+          2560,
+          1505
+        ],
+        [
+          2670,
+          1505
+        ]
+      ]
     },
     {
       "type": "arrow",
@@ -2029,68 +2095,71 @@
       "strokeColor": "#2f9e44",
       "strokeWidth": 2.5,
       "roughness": 1,
-      "seed": 170,
+      "seed": 270,
       "absolutePoints": true,
       "points": [
         [
-          1935,
-          1180
+          2500,
+          1540
         ],
         [
-          2005,
-          1180
+          2580,
+          1540
         ],
         [
-          2005,
-          1252
+          2580,
+          1665
         ],
         [
-          2075,
-          1252
+          2670,
+          1665
         ]
       ]
     },
     {
       "type": "text",
-      "id": "l_repo",
-      "x": 880,
-      "y": 1240,
-      "width": 300,
+      "id": "label_repo",
+      "x": 920,
+      "y": 1652,
+      "width": 330,
       "height": 28,
       "text": "Git 历史 + SHA-256 清单",
       "fontSize": 15,
       "fontFamily": 1,
       "strokeColor": "#1971c2",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "text",
-      "id": "l_github",
-      "x": 1940,
-      "y": 1220,
-      "width": 125,
+      "id": "label_git_push",
+      "x": 2510,
+      "y": 1635,
+      "width": 130,
       "height": 28,
       "text": "git push",
       "fontSize": 14,
       "fontFamily": 1,
       "strokeColor": "#2f9e44",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     },
     {
       "type": "text",
       "id": "ownership_note",
       "x": 120,
-      "y": 1402,
-      "width": 2180,
-      "height": 30,
-      "text": "团队开发：ESP32 固件、融合/成长/提醒算法、网络协议、Mac 编排、Prompt、Tool、TiDB 数据模型与部署测试。第三方：硬件、MicroPython、MiMo 模型、TiDB Cloud、GitHub。",
-      "fontSize": 17,
+      "y": 1900,
+      "width": 3060,
+      "height": 32,
+      "text": "团队开发：ESP32 固件、融合 / 成长 / 提醒算法、网络协议、Mac 编排、Prompt、Tool、TiDB 数据模型与部署测试。第三方：硬件、MicroPython、MiMo 模型、TiDB Cloud、GitHub。",
+      "fontSize": 18,
       "fontFamily": 1,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle",
+      "lineHeight": 1.25
     }
   ],
   "appState": {
