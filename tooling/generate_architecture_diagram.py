@@ -213,6 +213,7 @@ def arrow(
     stroke_width=2,
     dashed=False,
     points=None,
+    start=False,
 ):
     item = {
         "type": "arrow",
@@ -226,6 +227,8 @@ def arrow(
     }
     if dashed:
         item["strokeStyle"] = "dashed"
+    if start:
+        item["startArrowhead"] = True
     if points:
         item["absolutePoints"] = True
         item["points"] = points
@@ -237,620 +240,221 @@ def label(element_id, x, y, width, value, color=GRAY, max_size=16):
     add_text(element_id, x, y, width, 28, value, size, color, "center", "middle")
 
 
-# Canvas and title.
+# One-page judge-facing architecture: only the core experience and ownership.
 rect(
-    "canvas_frame",
-    30,
-    25,
-    3240,
-    1920,
-    "#ffffff",
-    "#adb5bd",
-    rough=1,
-    stroke_width=2,
-    fill_style="solid",
+    "canvas_frame", 30, 25, 3140, 1740, "#ffffff", "#adb5bd",
+    rough=1, stroke_width=2, fill_style="solid",
 )
 add_text(
-    "title",
-    110,
-    55,
-    3080,
-    58,
-    "ESP32-S3 书桌学习伴侣 · 实机系统架构",
-    42,
-    DARK,
-    "center",
-    "middle",
+    "title", 100, 48, 3000, 58,
+    "ESP32-S3 书桌学习伴侣 · 一页架构图",
+    42, DARK, "center", "middle",
 )
 add_text(
-    "subtitle",
-    110,
-    118,
-    3080,
-    34,
-    "真实输入 → ESP32 边缘计算 → SDK / Agent / Tool → 数据与实际输出",
-    22,
-    GRAY,
-    "center",
-    "middle",
+    "subtitle", 100, 110, 3000, 38,
+    "三条可追踪闭环：本地感知与提醒 ｜ 儿童语音问答 ｜ 家长云端查看与控制",
+    23, GRAY, "center", "middle",
 )
 
-# Legend.
-legend_y = 174
+# Ownership legend required by the competition brief.
 legend = [
-    (575, TEAM_FILL, BLUE, "团队开发"),
-    (940, EXT_FILL, PURPLE, "第三方 SDK / 模型"),
-    (1395, INPUT_FILL, ORANGE, "真实输入"),
-    (1735, OUTPUT_FILL, GREEN, "实际输出"),
-    (2070, OPTIONAL_FILL, RED, "预留未启用"),
+    ("平台 / 主办方提供", EXT_FILL, PURPLE),
+    ("团队配置 / 集成", INPUT_FILL, ORANGE),
+    ("团队自主开发", TEAM_FILL, BLUE),
+    ("实际输出 / 已接通", OUTPUT_FILL, GREEN),
+    ("接口预留", OPTIONAL_FILL, RED),
 ]
-for index, (x, fill, stroke, name) in enumerate(legend):
-    rect(
-        "legend_%d" % index,
-        x,
-        legend_y,
-        46,
-        28,
-        fill,
-        stroke,
-        dashed=index == 4,
-    )
-    add_text(
-        "legend_text_%d" % index,
-        x + 58,
-        legend_y - 2,
-        250,
-        32,
-        name,
-        18,
-        DARK,
-        "left",
-        "middle",
-    )
+lx = 420
+for index, (name, fill, stroke) in enumerate(legend):
+    x = lx + index * 470
+    rect("legend_%d" % index, x, 170, 42, 28, fill, stroke, stroke_width=2)
+    add_text("legend_text_%d" % index, x + 55, 168, 330, 32, name, 18, DARK, "left", "middle")
 
-# Five large sections. More width and spacing prevents text/line collisions.
-containers = [
-    ("group_input", 60, 250, 380, 1630, CREAM, ORANGE, "① 真实输入"),
-    ("group_edge", 480, 250, 760, 1630, "#e7f5ff", BLUE, "② ESP32-S3 边缘端"),
-    ("group_channel", 1280, 250, 300, 1630, "#f8f0fc", PURPLE, "③ 数据通道"),
-    ("group_ai", 1620, 250, 930, 1630, "#f8f0fc", PURPLE, "④ Mac + SDK / Agent / Tool"),
-    ("group_output", 2590, 250, 650, 1630, "#ebfbee", GREEN, "⑤ 实际输出"),
+# Six required layers.
+groups = [
+    ("group_input", 50, 250, 390, 1390, "① 真实世界输入", ORANGE),
+    ("group_device", 460, 250, 420, 1390, "② 实体设备", PURPLE),
+    ("group_cap", 900, 250, 500, 1390, "③ 设备能力层", BLUE),
+    ("group_conn", 1420, 250, 350, 1390, "④ 连接方式", ORANGE),
+    ("group_smart", 1790, 250, 800, 1390, "⑤ 智能层 / 服务层", PURPLE),
+    ("group_output", 2610, 250, 540, 1390, "⑥ 实际输出", GREEN),
 ]
-for element_id, x, y, width, height, fill, stroke, title in containers:
-    rect(element_id, x, y, width, height, fill, stroke, opacity=52)
-    add_text(
-        element_id + "_title",
-        x + 18,
-        y + 12,
-        width - 36,
-        42,
-        title,
-        25,
-        stroke,
-        "center",
-        "middle",
-    )
+for gid, x, y, w, h, title, color in groups:
+    rect(gid, x, y, w, h, "#ffffff", color, rough=1, stroke_width=2,
+         fill_style="solid", opacity=22)
+    add_text(gid + "_title", x + 18, y + 16, w - 36, 42, title, 25, color, "center", "middle")
 
-# ① Real inputs.
+# Row 1: local sensing and reminder loop.
 node(
-    "input_presence",
-    110,
-    350,
-    280,
-    150,
-    "儿童行为\n在座 / 移动 / 离开",
-    INPUT_FILL,
-    ORANGE,
-    20,
-    "ellipse",
+    "input_sense", 90, 350, 310, 190,
+    "儿童在座 / 移动 / 离开\n桌面光照 · 温度 · 湿度",
+    INPUT_FILL, ORANGE, 23, "ellipse",
 )
 node(
-    "input_environment",
-    110,
-    630,
-    280,
-    150,
-    "桌面环境\n光照 / 温度 / 湿度",
-    INPUT_FILL,
-    ORANGE,
-    20,
-    "ellipse",
+    "device_sensors", 500, 335, 340, 230,
+    "ESP32-S3 传感器套件\nPIR · VL53L0X\n双路光敏 · DHT11",
+    EXT_FILL, PURPLE, 23,
 )
 node(
-    "input_voice",
-    110,
-    930,
-    280,
-    150,
-    "长按 IO10\n儿童真实语音",
-    INPUT_FILL,
-    ORANGE,
-    20,
-    "ellipse",
+    "cap_sdk", 950, 325, 400, 150,
+    "MicroPython SDK / HAL\nGPIO · ADC · I²C · SPI · I2S",
+    INPUT_FILL, ORANGE, 22,
 )
 node(
-    "input_repo",
-    110,
-    1510,
-    280,
-    140,
-    "Git 提交\n代码 / 文档 / 素材",
-    INPUT_FILL,
-    ORANGE,
-    20,
-    "ellipse",
+    "cap_fusion", 950, 500, 400, 170,
+    "传感器融合 + 学习 Tool\nPRESENT / AWAY\n距离 · 计时 · 成长 · 提醒",
+    TEAM_FILL, BLUE, 22,
+)
+node(
+    "conn_local", 1460, 370, 270, 170,
+    "板内连接\nGPIO / I²C / ADC / I2S\n团队引脚配置",
+    INPUT_FILL, ORANGE, 21,
+)
+node(
+    "smart_local", 1840, 350, 700, 200,
+    "本地规则 Tools（团队自主开发）\n融合状态机 · 阈值滞回 · 学习成长规则 · 提醒调度\n不依赖云端，断网仍工作",
+    TEAM_FILL, BLUE, 23,
+)
+node(
+    "output_local", 2660, 335, 440, 250,
+    "OLED + LCD + 扬声器\n北京时间 · 光照温湿度\n在座 · 距离 · 连续学习时长\n低光 / 休息喝水提醒与动画",
+    OUTPUT_FILL, GREEN, 22,
 )
 
-# ② ESP32 edge tools.
+# Row 2: voice learning loop.
 node(
-    "esp_sdk",
-    520,
-    340,
-    300,
-    150,
-    "MicroPython SDK / HAL\nGPIO · ADC · I²C\nSPI · I2S · Wi-Fi",
-    EXT_FILL,
-    PURPLE,
-    20,
+    "input_voice", 90, 755, 310, 180,
+    "长按 IO10\n儿童真实语音问题",
+    INPUT_FILL, ORANGE, 24, "ellipse",
 )
 node(
-    "esp_main",
-    880,
-    340,
-    300,
-    150,
-    "main.py（团队）\n协作主循环\n显示调度 · 看门狗",
-    TEAM_FILL,
-    BLUE,
-    20,
+    "device_audio", 500, 720, 340, 250,
+    "ESP32-S3 音频硬件\nI2S 数字麦克风\nI2S 功放 + 扬声器\nIO10 按键",
+    EXT_FILL, PURPLE, 22,
 )
 node(
-    "esp_fusion",
-    520,
-    590,
-    300,
-    150,
-    "传感器融合 Tool\nPIR + VL53L0X\nPRESENT / AWAY",
-    TEAM_FILL,
-    BLUE,
-    20,
+    "cap_audio", 950, 720, 400, 250,
+    "AudioManager + VoiceQAClient\n录音 / WAV / I2S 仲裁\n非阻塞状态机 · 鉴权 · 重连",
+    TEAM_FILL, BLUE, 22,
 )
 node(
-    "esp_study",
-    880,
-    590,
-    300,
-    150,
-    "学习系统 Tool\n计时 · 每日目标 · 成长\n体力 · Flash 持久化",
-    TEAM_FILL,
-    BLUE,
-    20,
+    "conn_lan", 1460, 760, 270, 180,
+    "Wi-Fi 局域网\nUDP 发现 + TCP 双向\n语音 / JSON / PCM",
+    INPUT_FILL, ORANGE, 21,
 )
 node(
-    "esp_audio",
-    520,
-    930,
-    300,
-    150,
-    "AudioManager Tool\n麦克风 RX / 扬声器 TX\n统一 I2S 仲裁",
-    TEAM_FILL,
-    BLUE,
-    20,
+    "smart_voice_team", 1840, 700, 290, 280,
+    "Mac Custom Service\n团队 Prompt\nTool Router\n编排 · 鉴权 · 答案裁剪",
+    TEAM_FILL, BLUE, 22,
 )
 node(
-    "esp_voice",
-    880,
-    930,
-    300,
-    150,
-    "VoiceQAClient Tool\n录音 · Wi-Fi · 重连\n协议状态机",
-    TEAM_FILL,
-    BLUE,
-    20,
+    "smart_mimo", 2190, 700, 350, 280,
+    "MiMo 智能层\nASR → Agent → TTS\n语音识别 · 学习答疑\n流式语音生成",
+    EXT_FILL, PURPLE, 23,
 )
 node(
-    "esp_reminder",
-    520,
-    1210,
-    300,
-    150,
-    "本地提醒 Tool\n喝水休息 / 低光照\nPCM 语音 + LCD 动画",
-    TEAM_FILL,
-    BLUE,
-    20,
-)
-node(
-    "esp_action",
-    880,
-    1210,
-    300,
-    150,
-    "设备动作 Tool\n白名单校验 · 去重\n写入每日学习目标",
-    TEAM_FILL,
-    BLUE,
-    20,
+    "output_voice", 2660, 730, 440, 230,
+    "板载扬声器实际播报\n儿童问题的 AI 答案\n设置确认语音",
+    OUTPUT_FILL, GREEN, 24,
 )
 
-# ③ Network/data protocols.
+# Row 3: cloud telemetry and parent control loop.
 node(
-    "channel_discovery",
-    1315,
-    350,
-    230,
-    140,
-    "UDP 8767\n发现 Mac 服务\n同步北京时间",
-    TEAM_FILL,
-    BLUE,
-    19,
+    "input_parent", 90, 1160, 310, 220,
+    "家长真实操作\n查看数据 · 修改目标/阈值\n喂草 · 奖励 · 给孩子捎话",
+    INPUT_FILL, ORANGE, 22, "ellipse",
 )
 node(
-    "channel_voice",
-    1315,
-    930,
-    230,
-    170,
-    "TCP 8766\nVQW1 / VA01\nWAV · JSON · PCM16\nDevice Token",
-    TEAM_FILL,
-    BLUE,
-    18,
+    "device_cloud", 500, 1115, 340, 280,
+    "ESP32-S3 网络与存储\nWi-Fi · Flash · SD\n60 秒样本与宠物状态\n离线 spool",
+    EXT_FILL, PURPLE, 22,
 )
 node(
-    "channel_event",
-    1315,
-    1450,
-    230,
-    145,
-    "TCP 8766\nEVT1 / EV01\n行为与传感器 JSON",
-    TEAM_FILL,
-    BLUE,
-    18,
+    "cap_net", 950, 1115, 400, 280,
+    "Net 云同步 / 下行 Tool\n后台 HTTPS · NTP/Worker 对时\n补传 · 配置 rev · 动作/消息音频执行",
+    TEAM_FILL, BLUE, 22,
+)
+node(
+    "conn_cloud", 1460, 1160, 270, 210,
+    "Wi-Fi + HTTPS 双向\nPOST /ingest\nGET /pull\nBearer Token",
+    INPUT_FILL, ORANGE, 21,
+)
+node(
+    "smart_worker", 1840, 1090, 310, 260,
+    "Cloudflare Worker\n团队 Custom Service / API Tools\n鉴权 · 换算 · 聚合\n配置 / 动作 / 消息队列",
+    TEAM_FILL, BLUE, 21,
+)
+node(
+    "smart_tidb", 2200, 1090, 340, 260,
+    "TiDB Cloud + Serverless SDK\n传感器 · 学习 · 宠物 · 配置\n实时查询与周报数据",
+    EXT_FILL, PURPLE, 22,
+)
+node(
+    "smart_skill", 1980, 1390, 420, 100,
+    "TiDB Agent Stack / 家长问数 Skill：接口预留，未接通",
+    OPTIONAL_FILL, RED, 18, dashed=True,
+)
+node(
+    "output_ios", 2660, 1070, 440, 300,
+    "原生 iOS 1.0 家长端（SwiftUI）\n实时专注 / 护眼 / 周报 / 设置\n喂草 · 奖励 · 给孩子捎话\n10 秒轮询 + 本地真实缓存",
+    OUTPUT_FILL, GREEN, 22,
+)
+node(
+    "output_action", 2660, 1420, 440, 150,
+    "ESP32 实际动作\n落盘配置 · 改成长/体力\nOLED 捎话 + TTS 播报 · LCD 动画",
+    OUTPUT_FILL, GREEN, 21,
 )
 
-# ④ Mac orchestration, SDK, Agent and tools.
-node(
-    "mac_server",
-    1670,
-    340,
-    320,
-    150,
-    "Voice Server Tool\n鉴权 · 并发 · 编排\n事件接收",
-    TEAM_FILL,
-    BLUE,
-    20,
+# Main row arrows make the three experiences readable without source code.
+arrow("a_sense_device", "input_sense", "device_sensors", ORANGE, 3)
+arrow("a_device_sdk", "device_sensors", "cap_sdk", BLUE, 3)
+arrow("a_sdk_fusion", "cap_sdk", "cap_fusion", BLUE, 3)
+arrow("a_fusion_conn", "cap_fusion", "conn_local", BLUE, 3)
+arrow("a_conn_local", "conn_local", "smart_local", BLUE, 3)
+arrow("a_local_output", "smart_local", "output_local", GREEN, 3)
+label("l_local", 1910, 320, 550, "闭环 1：感知 → 判断 → 板端显示 / 提醒", GREEN, 18)
+
+arrow("a_voice_device", "input_voice", "device_audio", ORANGE, 3)
+arrow("a_device_audio", "device_audio", "cap_audio", BLUE, 3)
+arrow("a_audio_lan", "cap_audio", "conn_lan", BLUE, 3)
+arrow("a_lan_mac", "conn_lan", "smart_voice_team", BLUE, 3)
+arrow("a_mac_mimo", "smart_voice_team", "smart_mimo", PURPLE, 3, start=True)
+arrow("a_mimo_voice", "smart_mimo", "output_voice", GREEN, 3)
+label("l_voice", 1910, 670, 550, "闭环 2：语音 → Agent → 流式回答", PURPLE, 18)
+
+# Cloud data flows left to right; control returns to Net Tool.
+arrow("a_cloud_device", "device_cloud", "cap_net", GREEN, 3)
+arrow("a_net_https", "cap_net", "conn_cloud", GREEN, 3, start=True)
+arrow("a_https_worker", "conn_cloud", "smart_worker", GREEN, 3, start=True)
+arrow("a_worker_tidb", "smart_worker", "smart_tidb", PURPLE, 3, start=True)
+arrow("a_tidb_ios", "smart_tidb", "output_ios", GREEN, 3)
+arrow(
+    "a_parent_ios", "input_parent", "output_ios", ORANGE, 3,
+    points=[[400, 1270], [430, 1270], [430, 1585], [2580, 1585], [2580, 1220], [2640, 1220]],
 )
-node(
-    "mimo_asr",
-    2180,
-    340,
-    320,
-    150,
-    "MiMo v2.5 ASR\nWAV → 识别文字",
-    EXT_FILL,
-    PURPLE,
-    21,
+label("l_parent", 1100, 1550, 650, "家长真实操作", ORANGE, 18)
+label("l_cloud", 1880, 1050, 620, "闭环 3：设备数据 ↔ TiDB ↔ iOS 家长端", GREEN, 18)
+
+# Explicit hardware-capability mapping required by the brief:
+# Tool/control -> connection -> SDK -> physical device action.
+arrow(
+    "a_control_back", "smart_worker", "cap_net", ORANGE, 3,
+    points=[[1830, 1270], [1775, 1270], [1775, 1515], [1420, 1515], [1420, 1270], [1370, 1270]],
 )
-node(
-    "tool_router",
-    1860,
-    590,
-    440,
-    190,
-    "Tool Router\n学习问答\n或设备设置？",
-    TEAM_FILL,
-    BLUE,
-    22,
-    "diamond",
+arrow(
+    "a_cap_action", "cap_net", "output_action", ORANGE, 3,
+    points=[[1150, 1410], [1150, 1600], [2580, 1600], [2580, 1495], [2640, 1495]],
 )
-node(
-    "mimo_agent",
-    1670,
-    920,
-    320,
-    160,
-    "MiMo v2.5 Pro Agent\n团队 Prompt\n结构化答案 JSON",
-    EXT_FILL,
-    PURPLE,
-    20,
-)
-node(
-    "mimo_tts",
-    2180,
-    920,
-    320,
-    160,
-    "MiMo v2.5 TTS\n文字 → PCM24\n团队重采样 PCM16",
-    EXT_FILL,
-    PURPLE,
-    20,
-)
-node(
-    "command_tool",
-    1860,
-    1190,
-    440,
-    160,
-    "目标指令解析 Tool\n“每日目标改为 2 小时”\nset_daily_goal_seconds",
-    TEAM_FILL,
-    BLUE,
-    20,
-)
-node(
-    "event_sink",
-    1670,
-    1460,
-    320,
-    160,
-    "Event Sink Tool\n本地 JSONL 优先\nPyMySQL + TLS",
-    TEAM_FILL,
-    BLUE,
-    20,
-)
-node(
-    "repo_sync",
-    2180,
-    1460,
-    320,
-    160,
-    "Repository Sync Tool\n源码快照\n素材 SHA-256 清单",
-    TEAM_FILL,
-    BLUE,
-    20,
+label(
+    "l_control", 1380, 1510, 1050,
+    "硬件能力映射：家长 / Tool → HTTPS → Net SDK → ESP32 配置、显示、TTS 播报、动画与数值动作",
+    ORANGE, 18,
 )
 
-# ⑤ Actual outputs.
-node(
-    "output_display",
-    2670,
-    340,
-    490,
-    180,
-    "OLED + LCD\n北京时间 · 环境数据\n宠物 · 距离 · 学习时长\n成长值",
-    OUTPUT_FILL,
-    GREEN,
-    22,
-)
-node(
-    "output_speaker",
-    2670,
-    910,
-    490,
-    180,
-    "I2S 扬声器\n本地提醒 · AI 回答\n设置确认语音",
-    OUTPUT_FILL,
-    GREEN,
-    22,
-)
-node(
-    "output_flash",
-    2670,
-    1180,
-    490,
-    180,
-    "ESP32 Flash\npet_state.json · pet_config.json\nstate.txt",
-    OUTPUT_FILL,
-    GREEN,
-    20,
-)
-node(
-    "output_tidb",
-    2670,
-    1430,
-    490,
-    150,
-    "TiDB Cloud\n行为 · 问答 · 代码快照\n素材清单",
-    OUTPUT_FILL,
-    GREEN,
-    21,
-)
-node(
-    "output_github",
-    2670,
-    1610,
-    490,
-    110,
-    "GitHub\n源码 · 文档 · 素材",
-    OUTPUT_FILL,
-    GREEN,
-    21,
-)
-node(
-    "output_stack",
-    2670,
-    1750,
-    490,
-    70,
-    "TiDB Agent Stack：接口预留，当前未配置",
-    OPTIONAL_FILL,
-    RED,
-    17,
-    dashed=True,
-)
-
-# Sensor and display path.
-arrow("a_presence_sdk", "input_presence", "esp_sdk", ORANGE, 2.5)
-arrow(
-    "a_environment_sdk",
-    "input_environment",
-    "esp_sdk",
-    ORANGE,
-    2.5,
-    points=[[390, 705], [455, 705], [455, 465], [520, 465]],
-)
-arrow("a_sdk_main", "esp_sdk", "esp_main", BLUE, 2.5)
-arrow(
-    "a_main_fusion",
-    "esp_main",
-    "esp_fusion",
-    BLUE,
-    2.5,
-    points=[[880, 415], [850, 415], [850, 665], [820, 665]],
-)
-arrow("a_fusion_study", "esp_fusion", "esp_study", BLUE, 2.5)
-arrow(
-    "a_study_display",
-    "esp_study",
-    "output_display",
-    GREEN,
-    2.5,
-    points=[[1180, 665], [1255, 665], [1255, 225], [2630, 225], [2630, 430], [2670, 430]],
-)
-label("label_gpio", 398, 395, 120, "GPIO / I²C", ORANGE, 15)
-label("label_fusion", 815, 635, 95, "融合状态", BLUE, 14)
-label("label_offline", 1880, 207, 310, "板端实时显示（离线可用）", GREEN, 16)
-
-# Voice question path.
-arrow("a_input_audio", "input_voice", "esp_audio", PURPLE, 2.5)
-arrow("a_audio_voice", "esp_audio", "esp_voice", BLUE, 2.5)
-arrow("a_voice_channel", "esp_voice", "channel_voice", PURPLE, 2.5)
-arrow(
-    "a_channel_server",
-    "channel_voice",
-    "mac_server",
-    PURPLE,
-    2.5,
-    points=[[1545, 1015], [1600, 1015], [1600, 415], [1670, 415]],
-)
-arrow("a_server_asr", "mac_server", "mimo_asr", PURPLE, 2.5)
-arrow("a_asr_router", "mimo_asr", "tool_router", PURPLE, 2.5)
-arrow("a_router_agent", "tool_router", "mimo_agent", PURPLE, 2.5)
-arrow("a_agent_tts", "mimo_agent", "mimo_tts", PURPLE, 2.5)
-arrow("a_tts_speaker", "mimo_tts", "output_speaker", GREEN, 2.5)
-label("label_i2s", 402, 965, 110, "I2S PCM", PURPLE, 14)
-label("label_wav", 1190, 950, 125, "WAV + 上下文", PURPLE, 14)
-label("label_https", 2030, 365, 100, "HTTPS", PURPLE, 14)
-label("label_question", 1645, 845, 190, "普通学习问题", PURPLE, 14)
-label("label_answer", 2000, 955, 160, "答案 JSON", PURPLE, 14)
-label("label_pcm", 2505, 945, 160, "VA01 / PCM16", GREEN, 14)
-
-# Voice command branch and Flash persistence.
-arrow("a_router_command", "tool_router", "command_tool", BLUE, 2.5)
-arrow(
-    "a_command_action",
-    "command_tool",
-    "esp_action",
-    BLUE,
-    2.5,
-    points=[[1860, 1270], [1600, 1270], [1600, 1165], [1260, 1165], [1260, 1285], [1180, 1285]],
-)
-arrow(
-    "a_action_flash",
-    "esp_action",
-    "output_flash",
-    GREEN,
-    2.5,
-    points=[[1180, 1285], [1260, 1285], [1260, 1390], [2600, 1390], [2600, 1270], [2670, 1270]],
-)
-label("label_action", 1320, 1137, 220, "device_action JSON", BLUE, 14)
-label("label_flash", 2320, 1362, 220, "校验后写入 Flash", GREEN, 14)
-
-# Local reminder path.
-arrow(
-    "a_main_reminder",
-    "esp_main",
-    "esp_reminder",
-    BLUE,
-    2.5,
-    points=[[1030, 490], [1210, 490], [1210, 1140], [670, 1140], [670, 1210]],
-)
-arrow(
-    "a_reminder_speaker",
-    "esp_reminder",
-    "output_speaker",
-    GREEN,
-    2.5,
-    points=[[820, 1285], [850, 1285], [850, 1125], [2610, 1125], [2610, 1000], [2670, 1000]],
-)
-label("label_local_audio", 1850, 1097, 290, "本地 PCM + LCD 动画", GREEN, 15)
-
-# Discovery and telemetry path.
-arrow(
-    "a_voice_discovery",
-    "esp_voice",
-    "channel_discovery",
-    BLUE,
-    2,
-    points=[[1180, 1005], [1255, 1005], [1255, 420], [1315, 420]],
-)
-arrow("a_discovery_server", "channel_discovery", "mac_server", BLUE, 2)
-arrow(
-    "a_main_event",
-    "esp_main",
-    "channel_event",
-    GREEN,
-    2.5,
-    points=[[1030, 490], [1260, 490], [1260, 1522], [1315, 1522]],
-)
-arrow("a_event_sink", "channel_event", "event_sink", GREEN, 2.5)
-arrow(
-    "a_server_sink",
-    "mac_server",
-    "event_sink",
-    GREEN,
-    2,
-    points=[[1830, 490], [1640, 490], [1640, 1540], [1670, 1540]],
-)
-arrow(
-    "a_sink_tidb",
-    "event_sink",
-    "output_tidb",
-    GREEN,
-    2.5,
-    points=[[1990, 1540], [2040, 1540], [2040, 1400], [2600, 1400], [2600, 1505], [2670, 1505]],
-)
-arrow(
-    "a_sink_stack",
-    "event_sink",
-    "output_stack",
-    RED,
-    2,
-    dashed=True,
-    points=[[1830, 1620], [1830, 1840], [2620, 1840], [2620, 1785], [2670, 1785]],
-)
-label("label_discovery", 1235, 500, 180, "发现 / 时间同步", BLUE, 14)
-label("label_telemetry", 1245, 1490, 115, "telemetry", GREEN, 14)
-label("label_tls", 2410, 1372, 140, "PyMySQL + TLS", GREEN, 14)
-label("label_stack", 2260, 1812, 220, "可选 HTTP", RED, 14)
-
-# Repository synchronization path.
-arrow(
-    "a_repo_sync",
-    "input_repo",
-    "repo_sync",
-    BLUE,
-    2.5,
-    points=[[390, 1580], [455, 1580], [455, 1680], [2140, 1680], [2140, 1540], [2180, 1540]],
-)
-arrow(
-    "a_sync_tidb",
-    "repo_sync",
-    "output_tidb",
-    GREEN,
-    2.5,
-    points=[[2500, 1540], [2560, 1540], [2560, 1505], [2670, 1505]],
-)
-arrow(
-    "a_sync_github",
-    "repo_sync",
-    "output_github",
-    GREEN,
-    2.5,
-    points=[[2500, 1540], [2580, 1540], [2580, 1665], [2670, 1665]],
-)
-label("label_repo", 920, 1652, 330, "Git 历史 + SHA-256 清单", BLUE, 15)
-label("label_git_push", 2510, 1635, 130, "git push", GREEN, 14)
-
-# Ownership note.
 add_text(
-    "ownership_note",
-    120,
-    1900,
-    3060,
-    32,
-    "团队开发：ESP32 固件、融合 / 成长 / 提醒算法、网络协议、Mac 编排、Prompt、Tool、TiDB 数据模型与部署测试。第三方：硬件、MicroPython、MiMo 模型、TiDB Cloud、GitHub。",
-    18,
-    DARK,
-    "center",
-    "middle",
+    "footer", 90, 1680, 3020, 42,
+    "团队自主开发：ESP32 固件与算法、音频/网络协议、Mac 编排、Prompt、Tool、Worker API、iOS App、数据模型与产品体验。",
+    21, DARK, "center", "middle",
 )
 
 payload = {
