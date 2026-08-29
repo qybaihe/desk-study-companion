@@ -41,5 +41,7 @@ final class Profile: ObservableObject {
     /// 只清本地 —— 云端那份数据还在，重新用同一个名字建档就接得回去。
     func reset() {
         name = ""; grade = ""; onboarded = false
+        // 缓存一起清 —— 否则新建的孩子会先看到上一个孩子的数字
+        Cache.clear()
     }
 }

@@ -173,36 +173,40 @@ async function snapshot(env: Env, childId: string) {
   const conn = db(env);
   if (!conn) return MOCK.snapshot;
   const base = { ...(MOCK.snapshot as Record<string, unknown>) };
+  const todayCST = new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
   try {
-    const last = await conn.execute(
-      `SELECT * FROM sensor_minute WHERE child_id=? AND ts <= NOW()
-         ORDER BY ts DESC LIMIT 1`,
-      [childId]) as Record<string, any>[];
-    const today = await conn.execute(
-      `SELECT COALESCE(SUM(present),0) AS mins FROM sensor_minute
-         WHERE child_id=? AND ${TODAY_CST}`,
-      [childId]) as Record<string, any>[];
-    const pet = await conn.execute(
-      'SELECT * FROM pet_state WHERE child_id=?', [childId]) as Record<string, any>[];
-    const dev = await conn.execute(
-      `SELECT ${CST('last_seen')} AS seen_cst,
-              TIMESTAMPDIFF(SECOND, last_seen, NOW()) AS age
-         FROM device WHERE child_id=? ORDER BY last_seen DESC LIMIT 1`,
-      [childId]) as Record<string, any>[];
+    // 这些查询之间没有依赖，串行发九次的话一个请求要两秒多。
+    // TiDB serverless 走 HTTP，每次往返 200~400ms —— 并发是唯一的解。
+    const [last, today, pet, dev, tail, cfg, ask] = await Promise.all([
+      conn.execute(
+        `SELECT * FROM sensor_minute WHERE child_id=? AND ts <= NOW()
+           ORDER BY ts DESC LIMIT 1`, [childId]) as Promise<Record<string, any>[]>,
+      conn.execute(
+        `SELECT COALESCE(SUM(present),0) AS mins FROM sensor_minute
+           WHERE child_id=? AND ${TODAY_CST}`, [childId]) as Promise<Record<string, any>[]>,
+      conn.execute(
+        'SELECT * FROM pet_state WHERE child_id=?', [childId]) as Promise<Record<string, any>[]>,
+      conn.execute(
+        `SELECT ${CST('last_seen')} AS seen_cst,
+                TIMESTAMPDIFF(SECOND, last_seen, NOW()) AS age
+           FROM device WHERE child_id=? ORDER BY last_seen DESC LIMIT 1`,
+        [childId]) as Promise<Record<string, any>[]>,
+      // 本轮连续 = 末尾这段没有断过的在座分钟数
+      conn.execute(
+        `SELECT present FROM sensor_minute
+          WHERE child_id=? AND ${TODAY_CST} ORDER BY ts DESC LIMIT 240`,
+        [childId]) as Promise<Record<string, any>[]>,
+      configFor(env, childId) as Promise<Record<string, any>>,
+      askTopics(env, childId, todayCST, addDays(todayCST, 1)),
+    ]);
 
     if (!last?.length && !dev?.length) return base;   // 一条数据都没有，先给演示值
 
-    // 本轮连续 = 末尾这段没有断过的在座分钟数
-    const tail = await conn.execute(
-      `SELECT present FROM sensor_minute
-        WHERE child_id=? AND ${TODAY_CST} ORDER BY ts DESC LIMIT 240`,
-      [childId]) as Record<string, any>[];
     let streak = 0;
     for (const r of tail ?? []) { if (!r.present) break; streak++; }
-    const ey = await eye(env, childId) as Record<string, any>;
-    const cfg = await configFor(env, childId) as Record<string, any>;
-    const todayCST = new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
-    const ask = await askTopics(env, childId, todayCST, addDays(todayCST, 1));
+    // 把已经拿到的配置传进去，别让 eye() 再查一次
+    const ey = await eye(env, childId, cfg) as Record<string, any>;
+
     const l = last?.[0] ?? {};
     const p = pet?.[0] ?? {};
     const d = dev?.[0];
@@ -353,19 +357,30 @@ async function study(env: Env, childId: string) {
 
 // ───────────────────────────────── 护眼（实时）
 
-async function eye(env: Env, childId: string) {
+async function eye(env: Env, childId: string, preloaded?: Record<string, any>) {
   const conn = db(env);
   if (!conn) return MOCK.eye;
-  const cfg = await configFor(env, childId) as Record<string, any>;
+  // snapshot 已经查过配置了，传进来就别再查一次
+  const cfg = preloaded ?? await configFor(env, childId) as Record<string, any>;
   const near = cfg.distance_min ?? 400;
   const far = cfg.distance_max ?? 850;
-  const darkAt = cfg.light_min ?? 3600;
+  const dark = cfg.light_min ?? 3600;
 
-  const rows = await conn.execute(
-    `SELECT ${CST('ts')} AS t, distance_mm, light_left, light_right
-       FROM sensor_minute
-      WHERE child_id=? AND present=1 AND ${TODAY_CST} ORDER BY ts`,
-    [childId]) as Record<string, any>[];
+  // 今日明细和近 7 天历史互不依赖，一起发
+  const [rows, hist] = await Promise.all([
+    conn.execute(
+      `SELECT ${CST('ts')} AS t, distance_mm, light_left, light_right
+         FROM sensor_minute
+        WHERE child_id=? AND present=1 AND ${TODAY_CST} ORDER BY ts`,
+      [childId]) as Promise<Record<string, any>[]>,
+    conn.execute(
+      `SELECT DATE(${CST('ts')}) AS d,
+              SUM(distance_mm IS NOT NULL AND distance_mm < ?) AS close_m,
+              SUM((COALESCE(light_left,0)+COALESCE(light_right,0))/2 < ?) AS dark_m
+         FROM sensor_minute
+        WHERE child_id=? AND present=1 AND ts >= DATE_SUB(NOW(), INTERVAL 9 DAY)
+        GROUP BY d ORDER BY d`, [near, dark, childId]) as Promise<Record<string, any>[]>,
+  ]);
   if (!rows?.length) return MOCK.eye;
 
   const measured = rows.filter(r => r.distance_mm != null);
@@ -373,7 +388,7 @@ async function eye(env: Env, childId: string) {
   const farMin = measured.filter(r => r.distance_mm > far).length;
   const okMin = measured.length - closeMin - farMin;
   const darkMin = rows.filter(r =>
-    ((Number(r.light_left ?? 0) + Number(r.light_right ?? 0)) / 2) < darkAt).length;
+    ((Number(r.light_left ?? 0) + Number(r.light_right ?? 0)) / 2) < dark).length;
 
   // 偏近"次数"按连续段算，不按分钟 —— 连着近 10 分钟是一次，不是十次。
   const closeEvents = runs(measured, r => r.distance_mm < near ? 'close' : 'ok')
@@ -392,14 +407,7 @@ async function eye(env: Env, childId: string) {
   ].filter(d => d.points < 0);
   const score = Math.max(0, 100 + deductions.reduce((n, d) => n + d.points, 0));
 
-  // 近 7 天分数：同一套扣分规则按天重算一遍
-  const hist = await conn.execute(
-    `SELECT DATE(${CST('ts')}) AS d,
-            SUM(distance_mm IS NOT NULL AND distance_mm < ?) AS close_m,
-            SUM((COALESCE(light_left,0)+COALESCE(light_right,0))/2 < ?) AS dark_m
-       FROM sensor_minute
-      WHERE child_id=? AND present=1 AND ts >= DATE_SUB(NOW(), INTERVAL 9 DAY)
-      GROUP BY d ORDER BY d`, [near, darkAt, childId]) as Record<string, any>[];
+  // 近 7 天分数：同一套扣分规则按天重算一遍（hist 已在上面并发取到）
   const last7 = hist.slice(-7).map(r => Math.max(0, 100
     - Math.min(20, Math.round(Number(r.close_m) / 3))
     - Math.min(15, Math.round(Number(r.dark_m) / 4))));
@@ -519,11 +527,13 @@ async function putSettings(req: Request, env: Env): Promise<Response> {
 async function settings(env: Env, childId: string) {
   const conn = db(env);
   if (!conn) return MOCK.settings;
-  const c = await configFor(env, childId) as Record<string, any>;
-  const dev = await conn.execute(
-    'SELECT device_id, firmware FROM device WHERE child_id=? ORDER BY last_seen DESC LIMIT 1',
-    [childId]) as Record<string, any>[];
-  const name = await getChild(env, childId);
+  const [c, dev, name] = await Promise.all([
+    configFor(env, childId) as Promise<Record<string, any>>,
+    conn.execute(
+      'SELECT device_id, firmware FROM device WHERE child_id=? ORDER BY last_seen DESC LIMIT 1',
+      [childId]) as Promise<Record<string, any>[]>,
+    getChild(env, childId),
+  ]);
   const base = MOCK.settings as Record<string, any>;
   return {
     ...base,

@@ -134,11 +134,31 @@ final class Store: ObservableObject {
     @Published var isLive = true
     @Published var lastError: String?
 
-    /// 一装上就指向固定后端。@Published 的初值还是 Mock —— 首帧不至于空白，
-    /// 第一次 refresh 成功后整屏被真实数据替换掉。
+    /// 首屏状态。App 不能在拿到真实数据之前把 Mock 的数字摆出来 ——
+    /// 家长看到的每一个数字都必须是真的，哪怕代价是先转一会儿圈。
+    enum Load: Equatable { case loading, ready, failed(String) }
+    @Published var load: Load = .loading
+
+    /// 一装上就指向固定后端。
     private var source: StudyDataSource = APISource(
         baseURL: Backend.baseURL, childID: Backend.childID, token: Backend.token)
     private var poller: Task<Void, Never>?
+
+    init() {
+        // 有缓存就直接进主界面 —— 回头用户不该为了看一眼数据先转圈
+        if let s = Cache.load(Snapshot.self, "snapshot") {
+            snapshot = s
+            eye        = Cache.load(EyeReport.self, "eye") ?? eye
+            study      = Cache.load(StudyReport.self, "study") ?? study
+            diary      = Cache.load([DiaryLine].self, "diary") ?? diary
+            milestones = Cache.load([Milestone].self, "milestones") ?? milestones
+            weekly     = Cache.load(WeeklyReport.self, "weekly") ?? weekly
+            weeks      = Cache.load([WeekRef].self, "weeks") ?? weeks
+            reminders  = Cache.load(ReminderReport.self, "reminders") ?? reminders
+            settings   = Cache.load(Settings.self, "settings") ?? settings
+            load = .ready
+        }
+    }
 
     /// 留给调试：临时指到本地 FastAPI。正常路径不走这里。
     func connect(to baseURL: URL, childID: String, token: String? = nil) {
@@ -184,20 +204,54 @@ final class Store: ObservableObject {
     }
 
     func refresh() async {
+        // 九个接口并发发，不要串着等。串行时首次打开要转三四秒 ——
+        // 每个接口都是一次独立的 HTTP 往返，它们之间没有依赖。
+        let src = source
+        let week = pinnedWeek
         do {
-            snapshot = try await source.snapshot()
-            eye = try await source.eye()
-            study = try await source.study()
-            diary = try await source.diary()
-            milestones = try await source.milestones()
-            weekly = try await source.weekly(week: pinnedWeek)
-            weeks = (try? await source.weeklyList()) ?? weeks
-            reminders = try await source.reminders()
-            settings = try await source.settings()
+            async let a = src.snapshot()
+            async let b = src.eye()
+            async let c = src.study()
+            async let d = src.diary()
+            async let e = src.milestones()
+            async let f = src.weekly(week: week)
+            async let g = src.reminders()
+            async let h = src.settings()
+            async let list = try? src.weeklyList()
+
+            snapshot   = try await a
+            eye        = try await b
+            study      = try await c
+            diary      = try await d
+            milestones = try await e
+            weekly     = try await f
+            reminders  = try await g
+            settings   = try await h
+            weeks      = (await list) ?? weeks
             lastError = nil
+            cacheAll()
+            load = .ready
         } catch {
             lastError = error.localizedDescription
+            // 已经有数据在屏幕上就别把它换成错误页，留着旧数据 + 顶部提示
+            if load == .loading { load = .failed(error.localizedDescription) }
         }
+    }
+
+    private func cacheAll() {
+        Cache.save(snapshot, "snapshot");   Cache.save(eye, "eye")
+        Cache.save(study, "study");         Cache.save(diary, "diary")
+        Cache.save(milestones, "milestones")
+        Cache.save(reminders, "reminders"); Cache.save(settings, "settings")
+        Cache.save(weeks, "weeks")
+        // 翻往期时不要把某一期覆盖成"最新一期"的缓存
+        if pinnedWeek == nil { Cache.save(weekly, "weekly") }
+    }
+
+    /// 首屏失败后手动重试
+    func retry() async {
+        load = .loading
+        await refresh()
     }
 
     /// 小羊状态变化很慢（体力每 30 秒 ±1），10 秒轮询足够，不需要 WebSocket
