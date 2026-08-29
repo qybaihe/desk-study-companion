@@ -6,6 +6,63 @@ struct PetView: View {
     @EnvironmentObject var store: Store
     @State private var sending = false
     @State private var sent: String?     // 刚送出的那一个，用来给按钮一个回执
+    @State private var note = ""
+    @State private var noteSent = false
+    @FocusState private var noteFocused: Bool
+
+    /// 捎话。文字在手机上渲染成 128×64 单色位图再传下去 —— 板子的 OLED
+    /// 只有 8×8 的 ASCII 字库，画不了中文。
+    private var messageCard: some View {
+        Card(pad: 18) {
+            VStack(alignment: .leading, spacing: 12) {
+                Label2(t: "给他捎句话")
+                TextField("写点什么，会出现在他桌上的小屏幕", text: $note, axis: .vertical)
+                    .font(Theme.sans(15))
+                    .lineLimit(1...3)
+                    .focused($noteFocused)
+                    .padding(.horizontal, 13).padding(.vertical, 11)
+                    .background(Theme.bg)
+                    .clipShape(RoundedRectangle(cornerRadius: Theme.ctlRadius))
+                HStack(spacing: 10) {
+                    Text(noteSent ? "已送到他桌上" : "会在小屏幕上停十秒")
+                        .font(Theme.sans(12))
+                        .foregroundStyle(noteSent ? Theme.accent : Theme.muted)
+                    Spacer()
+                    Button {
+                        let t = note.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !t.isEmpty, !sending else { return }
+                        sending = true; noteFocused = false
+                        Task {
+                            let ok = await store.sendMessage(t)
+                            sending = false
+                            if ok {
+                                note = ""; noteSent = true
+                                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                                noteSent = false
+                            }
+                        }
+                    } label: {
+                        Text("送过去")
+                            .font(Theme.sans(15, .medium))
+                            .padding(.horizontal, 18).padding(.vertical, 9)
+                    }
+                    .background(note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                ? Theme.panel : Theme.accent)
+                    .foregroundStyle(note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                     ? Theme.muted : .white)
+                    .clipShape(RoundedRectangle(cornerRadius: Theme.ctlRadius))
+                    .disabled(note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || sending)
+                }
+            }
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("完成") { noteFocused = false }
+                    .font(Theme.sans(15, .medium)).foregroundStyle(Theme.accent)
+            }
+        }
+    }
 
     /// 动作排进云端队列，板子最多 20 秒后取走并在 LCD 上演出来。
     /// 体力/成长会跟着变，下一次上报就同步回这里 —— 不在本地假装。
@@ -135,6 +192,8 @@ struct PetView: View {
             }
             .font(Theme.sans(15, .medium))
             .disabled(sending)
+
+            messageCard
 
             // 把监控翻转成共育的支点，给它独立一行虚线框
             DashedNote(text: "孩子在设备上看到的是同一只羊")

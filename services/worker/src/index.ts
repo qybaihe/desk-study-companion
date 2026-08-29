@@ -99,7 +99,7 @@ async function ingest(req: Request, env: Env): Promise<Response> {
   const body = await req.json() as {
     device_id: string; child_id: string; firmware?: string;
     samples?: Sample[]; hp?: number; grow?: number; form?: string;
-    simulated?: boolean;
+    study_seconds?: number; simulated?: boolean;
   };
   const conn = db(env);
   let accepted = 0;
@@ -150,12 +150,17 @@ async function ingest(req: Request, env: Env): Promise<Response> {
       [body.device_id, body.child_id, body.firmware ?? null],
     );
     if (body.hp !== undefined) {
+      // study_seconds 是板子自己按毫秒累加的当日在座时长，也就是孩子在 LCD 上
+      // 看到的那个数。列可能还不存在（旧库），加不上就算了，下面会回落。
+      try { await conn.execute('ALTER TABLE pet_state ADD COLUMN study_seconds INT DEFAULT NULL'); }
+      catch { /* 已经有了 */ }
       await conn.execute(
-        `INSERT INTO pet_state (child_id, hp, grow, form, updated_at)
-         VALUES (?,?,?,?,NOW())
+        `INSERT INTO pet_state (child_id, hp, grow, form, study_seconds, updated_at)
+         VALUES (?,?,?,?,?,NOW())
          ON DUPLICATE KEY UPDATE hp=VALUES(hp), grow=VALUES(grow),
-           form=VALUES(form), updated_at=NOW()`,
-        [body.child_id, body.hp, body.grow ?? 0, body.form ?? 'normal'],
+           form=VALUES(form), study_seconds=VALUES(study_seconds), updated_at=NOW()`,
+        [body.child_id, body.hp, body.grow ?? 0, body.form ?? 'normal',
+         body.study_seconds ?? null],
       );
     }
   }
@@ -163,7 +168,8 @@ async function ingest(req: Request, env: Env): Promise<Response> {
   // 而这条 HTTPS 已经证明能走通 —— 用它对表比 NTP 可靠。
   return json({ ok: true, accepted, rejected: bad.length, now: utcNow(),
                 config: await configFor(env, body.child_id),
-                actions: await takeActions(env, body.child_id) });
+                actions: await takeActions(env, body.child_id),
+                message: await takeMessage(env, body.child_id) });
 }
 
 // ───────────────────────────────── App 读取
@@ -215,7 +221,12 @@ async function snapshot(env: Env, childId: string) {
       link: d && d.age !== null && d.age < 90 ? 'online' : 'offline',
       hp: p.hp ?? 100,
       grow: p.grow ?? 0,
-      todayMinutes: Number(today?.[0]?.mins ?? 0),
+      // 优先用板子自己的计时。App 这边是「一分钟内过半在座就整分钟记 1」，
+      // 板子是按毫秒累加 —— 同一天算出来能差三成，孩子看 LCD、家长看手机，
+      // 两块屏对同一件事给不同数字。以板子为准。
+      todayMinutes: p.study_seconds != null
+        ? Math.round(Number(p.study_seconds) / 60)
+        : Number(today?.[0]?.mins ?? 0),
       goalHours: cfg.goal_hours ?? 4,
       streakMinutes: streak,
       eyeScore: ey.score, eyeDeducted: 100 - ey.score,
@@ -552,24 +563,101 @@ async function settings(env: Env, childId: string) {
   };
 }
 
+// ───────────────────────────────── 家长捎话
+
+const DDL_MESSAGE = `CREATE TABLE IF NOT EXISTS device_message (
+  id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+  child_id     VARCHAR(64)  NOT NULL,
+  text         VARCHAR(200) NOT NULL,
+  bitmap       TEXT,
+  created_at   DATETIME     NOT NULL,
+  delivered_at DATETIME     NULL,
+  KEY idx_pending (child_id, delivered_at, id)
+)`;
+
+/** 家长在 App 上给孩子捎一句话，板子取走后在 OLED 上显示十秒。
+ *
+ *  bitmap 是 App 渲染好的 128x64 单色位图（MONO_VLSB，base64）。
+ *  OLED 用的是 framebuf 内置的 8x8 ASCII 字库，画不了中文 —— 与其在板子上
+ *  塞一套中文字库，不如让有字体的那一端（手机）把字排好版画成位图。 */
+async function putMessage(req: Request, env: Env): Promise<Response> {
+  const b = await req.json() as { child_id?: string; text?: string; bitmap?: string };
+  const id = (b.child_id ?? '').trim();
+  const text = (b.text ?? '').trim().slice(0, 200);
+  if (!id || !text) return json({ error: 'child_id 和 text 都不能为空' }, 400);
+  // 128x64 的 MONO_VLSB 是 1024 字节，base64 后 1368 字符。留点余量。
+  const bmp = (b.bitmap ?? '').slice(0, 4096);
+  const conn = db(env);
+  if (!conn) return json({ ok: true, queued: 0 });
+  await conn.execute(DDL_MESSAGE);
+  // 送达过的就没用了 —— 它在 OLED 上露过十秒，留着只会让表无限长，
+  // 还会把测试时误发的内容一直留在库里。
+  await conn.execute(
+    'DELETE FROM device_message WHERE child_id=? AND delivered_at IS NOT NULL', [id]);
+  await conn.execute(
+    'INSERT INTO device_message (child_id, text, bitmap, created_at) VALUES (?,?,?,NOW())',
+    [id, text, bmp || null]);
+  return json({ ok: true, queued: 1 });
+}
+
+/** 板子每次联系服务器时取一条。一次只给一条 —— 十秒的展示窗口排不了队。 */
+async function takeMessage(env: Env, childId: string) {
+  const conn = db(env);
+  if (!conn) return null;
+  try {
+    const rows = await conn.execute(
+      `SELECT id, text, bitmap FROM device_message
+        WHERE child_id=? AND delivered_at IS NULL
+        ORDER BY id LIMIT 1`, [childId]) as Record<string, any>[];
+    if (!rows?.length) return null;
+    await conn.execute(
+      'UPDATE device_message SET delivered_at=NOW() WHERE id=?', [rows[0].id]);
+    return { id: Number(rows[0].id), text: String(rows[0].text),
+             bitmap: rows[0].bitmap ?? null };
+  } catch {
+    return null;      // 表还没建出来时不该拖垮上报
+  }
+}
+
 // ───────────────────────────────── 提问
+
+/** 学科归类。解题器不返回学科，所以在这里用关键词粗分 ——
+ *  它只用来做「问题类型 Top 3」的聚合，分错一条不影响别的东西。 */
+const TOPIC_RULES: [RegExp, string][] = [
+  [/[加减乘除]|等于|多少钱|几个|面积|周长|方程|分之|平均|倍/, '数学'],
+  [/怎么读|拼音|组词|成语|古诗|课文|生字|笔画|近义词/, '语文'],
+  [/英语|英文|单词|字母|怎么说/, '英语'],
+  [/为什么|是什么|怎么来的|动物|植物|地球|太阳|科学/, '科学'],
+];
+const topicOf = (q: string) => {
+  for (const [re, name] of TOPIC_RULES) if (re.test(q)) return name;
+  return '其他';
+};
+
 
 async function putAsk(req: Request, env: Env): Promise<Response> {
   const b = await req.json() as {
-    child_id?: string; topic?: string; question?: string;
+    child_id?: string; device_id?: string; topic?: string; question?: string;
     answer?: string; asked_at?: string;
   };
-  const id = (b.child_id ?? '').trim();
-  if (!id) return json({ error: 'child_id 不能为空' }, 400);
   const conn = db(env);
   if (!conn) return json({ ok: true });
+  // 语音服务只认设备，不知道 child_id —— 给了 device_id 就反查
+  let id = (b.child_id ?? '').trim();
+  if (!id && b.device_id && conn) {
+    const rows = await conn.execute(
+      'SELECT child_id FROM device WHERE device_id=? LIMIT 1',
+      [b.device_id]) as Record<string, any>[];
+    id = rows?.[0]?.child_id ?? '';
+  }
+  if (!id) return json({ error: '认不出是哪个孩子：给 child_id 或已注册的 device_id' }, 400);
   // 和样本一样的时间戳门槛：时钟没对好的板子会发出 2000 年或未来的时间
   const ts = b.asked_at && b.asked_at >= '2020-01-01' && b.asked_at <= utcNow()
     ? b.asked_at : utcNow();
   await conn.execute(
     'INSERT INTO ask_log (child_id, asked_at, topic, question, answer) VALUES (?,?,?,?,?)',
-    [id, ts, b.topic ?? null, b.question ?? null, b.answer ?? null]);
-  return json({ ok: true });
+    [id, ts, b.topic || topicOf(b.question ?? ''), b.question ?? null, b.answer ?? null]);
+  return json({ ok: true, child_id: id, topic: b.topic || topicOf(b.question ?? '') });
 }
 
 /** 某段时间里的问题类型排行 */
@@ -586,6 +674,34 @@ async function askTopics(env: Env, childId: string, from: string, to: string) {
     return { topics: rows.slice(0, 3).map(r => ({ name: String(r.name), count: Number(r.n) })), total };
   } catch {
     return { topics: [], total: 0 };
+  }
+}
+
+/** App 的「提问」页读这个。 */
+async function askList(env: Env, childId: string, days = 7) {
+  const conn = db(env);
+  if (!conn) return { items: [], total: 0, todayCount: 0 };
+  try {
+    const rows = await conn.execute(
+      `SELECT ${CST('asked_at')} AS t, topic, question, answer
+         FROM ask_log
+        WHERE child_id=? AND asked_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+        ORDER BY asked_at DESC LIMIT 60`, [childId, days]) as Record<string, any>[];
+    const items = (rows ?? []).map(r => ({
+      when: String(r.t).slice(5, 16),
+      day: String(r.t).slice(0, 10),
+      topic: r.topic ?? '其他',
+      question: r.question ?? '',
+      answer: r.answer ?? '',
+    }));
+    const today = new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
+    return {
+      items,
+      total: items.length,
+      todayCount: items.filter(i => i.day === today).length,
+    };
+  } catch {
+    return { items: [], total: 0, todayCount: 0 };
   }
 }
 
@@ -779,6 +895,14 @@ export default {
     const childId = url.searchParams.get('child_id') ?? 'xiaoman';
 
     if (path === '/time') return json({ now: utcNow() });
+    // 现场诊断用：板子到边缘的吞吐。语音链路能不能走云端全看这个数。
+    if (path === '/bench') {
+      const n = Math.min(2_000_000, Number(url.searchParams.get('bytes') ?? 65536));
+      return new Response('x'.repeat(n), {
+        headers: { 'content-type': 'application/octet-stream',
+                   'cache-control': 'no-store',
+                   'access-control-allow-origin': '*' } });
+    }
     if (path === '/health') {
       return json({ ok: true, db: !!env.DATABASE_URL, auth: !!env.API_TOKEN });
     }
@@ -791,17 +915,21 @@ export default {
       if (path === '/api/settings' && req.method === 'POST') return await putSettings(req, env);
       if (path === '/api/action' && req.method === 'POST') return await pushAction(req, env);
       if (path === '/api/ask' && req.method === 'POST') return await putAsk(req, env);
+      if (path === '/api/message' && req.method === 'POST') return await putMessage(req, env);
       // 板子空闲时的轻量轮询：只拿配置和待办动作，不带样本。
       // 家长按下喂草到小羊有反应，靠的就是这一条。
       if (path === '/pull') {
-        return json({ now: utcNow(), config: await configFor(env, childId),
-                      actions: await takeActions(env, childId) });
+        const [config, actions, message] = await Promise.all([
+          configFor(env, childId), takeActions(env, childId), takeMessage(env, childId),
+        ]);
+        return json({ now: utcNow(), config, actions, message });
       }
 
       switch (path) {
         case '/api/snapshot':   return json(await snapshot(env, childId));
         case '/api/reminders':  return json(await reminders(env, childId));
         case '/api/child':      return json(await getChild(env, childId));
+        case '/api/ask':        return json(await askList(env, childId));
         case '/api/eye':        return json(await eye(env, childId));
         case '/api/study':      return json(await study(env, childId));
         case '/api/diary':      return json(MOCK.diary);

@@ -72,6 +72,8 @@ class Net:
         self._busy = False        # 上报线程是否在跑，同一时刻只允许一个
         self.clock_ok = False     # RTC 对上表了没有
         self.actions = []         # 家长按下来的一次性动作，主循环取走
+        self.message = None       # 家长捎的话，主循环取走后在 OLED 上显示十秒
+        self.study_seconds = 0    # 板子自己的当日在座秒数，跟着上报一起走
         self.poll_seconds = 20
         self._last_contact = 0
         # 小羊的当前状态，跟着每批样本一起上去。App 首页直接读这三个。
@@ -224,7 +226,10 @@ class Net:
     def _post(self, samples) -> bool:
         body = {"device_id": self.device_id, "child_id": self.child_id,
                 "firmware": "sheepy-1.0", "samples": samples,
-                "hp": self.hp, "grow": self.grow, "form": self.form}
+                "hp": self.hp, "grow": self.grow, "form": self.form,
+                # 板子自己按毫秒累加的当日时长。App 那边原来是按分钟数格子，
+                # 同一天能差三成 —— 孩子看 LCD、家长看手机，两块屏得说同一个数。
+                "study_seconds": self.study_seconds}
         r = None
         self.feed()
         try:
@@ -305,7 +310,15 @@ class Net:
             kind = a.get("kind")
             if kind:
                 self.actions.append(kind)
+        m = body_in.get("message")
+        if m and m.get("text"):
+            self.message = m      # 一次只留一条 —— 十秒的展示窗口排不了队
         self._last_contact = time.time()
+
+    def take_message(self):
+        """主循环取走捎话。取完就清空。"""
+        m, self.message = self.message, None
+        return m
 
     def take_actions(self):
         """主循环取走待办动作。取完就清空。"""

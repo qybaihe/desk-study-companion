@@ -18,7 +18,6 @@ from pet_growth import PetGrowthSystem
 from st7789 import ST7789
 from study_reminder import LowLightReminder, OneShotStudyReminder
 from vl53l0x import VL53L0X
-from voice_device_actions import VoiceDeviceActionHandler
 from voice_qa_client import VoiceQAClient
 try:
     import sheepy_config as cloud_cfg
@@ -158,8 +157,7 @@ def save_state(
             state_file.write(
                 "pet_stage=%d pet_growth=%d stamina=%d sick=%d "
                 "pet_visual=%s daily_study_seconds=%d daily_goal_seconds=%d "
-                "daily_goal_percent=%d daily_goal_growth=%d/%d "
-                "env_ok=%d jump_count=%d "
+                "daily_goal_percent=%d env_ok=%d jump_count=%d "
                 "jump_frame=%d jump_assets=%d jump_duration_ms=%d\n"
                 % (
                     pet_state["stage"], pet_state["growth"],
@@ -168,8 +166,6 @@ def save_state(
                     pet_state["daily_study_seconds"],
                     pet_state["daily_goal_seconds"],
                     pet_state["daily_goal_percent"],
-                    pet_state["daily_goal_growth_awarded"],
-                    pet_state["daily_goal_growth_max"],
                     1 if pet_state["environment_ok"] else 0,
                     normal_jump_count, normal_jump_frame,
                     1 if normal_jump_assets_ok else 0,
@@ -318,9 +314,12 @@ lcd_static = None
 lcd_normal_sprite = None
 lcd_normal_animation_sprites = []
 lcd_sick_sprites = []
-lcd_evolved_sprites = []
-lcd_low_light_sprites = []
-lcd_rest_break_sprites = []
+lcd_heart_sprites = []
+# 名字按画的内容取，不按谁用它。板上的文件仍叫 low_light_*/rest_break_*，
+# 那是画师当初的命名 —— low_light_* 画的其实是绿对勾，rest_break_* 是红叉。
+# 「光线偏暗举着对勾」这个 bug 就是被这套名字带出来的。
+lcd_check_sprites = []      # 绿对勾 ✓  ← 板上文件 /low_light_N.rgb565
+lcd_cross_sprites = []      # 红叉 ✗    ← 板上文件 /rest_break_N.rgb565
 if lcd is not None:
     draw_lcd_static(lcd_fb, BLACK, WHITE)
     lcd_static = bytes(lcd_buffer)
@@ -333,14 +332,14 @@ if lcd is not None:
         lcd_sick_sprites.append(
             load_binary("/sick_%d.rgb565" % frame_number)
         )
-        lcd_evolved_sprites.append(
+        lcd_heart_sprites.append(
             load_binary("/evolved_%d.rgb565" % frame_number)
         )
     for frame_number in range(8):
-        lcd_low_light_sprites.append(
+        lcd_check_sprites.append(
             load_binary("/low_light_%d.rgb565" % frame_number)
         )
-        lcd_rest_break_sprites.append(
+        lcd_cross_sprites.append(
             load_binary("/rest_break_%d.rgb565" % frame_number)
         )
     normal_jump_assets_ok = (
@@ -352,18 +351,18 @@ if lcd is not None:
             for sprite in lcd_normal_animation_sprites
         )
     )
-    low_light_animation_assets_ok = (
-        len(lcd_low_light_sprites) == 8
+    check_assets_ok = (
+        len(lcd_check_sprites) == 8
         and all(
             sprite is not None and len(sprite) == 136 * 112 * 2
-            for sprite in lcd_low_light_sprites
+            for sprite in lcd_check_sprites
         )
     )
-    rest_break_animation_assets_ok = (
-        len(lcd_rest_break_sprites) == 8
+    cross_assets_ok = (
+        len(lcd_cross_sprites) == 8
         and all(
             sprite is not None and len(sprite) == 136 * 112 * 2
-            for sprite in lcd_rest_break_sprites
+            for sprite in lcd_cross_sprites
         )
     )
     lcd_buffer[:] = lcd_static
@@ -389,14 +388,14 @@ normal_jump_count = 0
 normal_jump_frame = -1
 if lcd is None:
     normal_jump_assets_ok = False
-    low_light_animation_assets_ok = False
-    rest_break_animation_assets_ok = False
+    check_assets_ok = False
+    cross_assets_ok = False
 
-low_light_voice_animator = LoopingFrameAnimator(
+check_animator = LoopingFrameAnimator(
     frame_count=8,
     frame_duration_ms=125,
 )
-rest_break_voice_animator = LoopingFrameAnimator(
+cross_animator = LoopingFrameAnimator(
     frame_count=8,
     frame_duration_ms=125,
 )
@@ -436,12 +435,7 @@ voice_player = AudioManager(
     microphone_word_select_pin=42,
     microphone_data_pin=2,
 )
-# B10K potentiometer: outer pins to 3V3/GND, centre wiper to GPIO8.
-volume_knob = ADC(Pin(8))
-volume_knob.atten(ADC.ATTN_11DB)
-last_volume_poll = None
 voice_qa = VoiceQAClient(voice_player, button_pulldown1)
-voice_action_handler = VoiceDeviceActionHandler(pet_system)
 voice_queue = []
 tof_error_count = 0
 temperature_c = None
@@ -479,6 +473,11 @@ _up_acc = None             # 这一分钟的累加器
 
 # 家长动作在屏幕上停留多久
 ACTION_HOLD_MS = 6_000
+# 家长捎的话在 OLED 上停留多久，之后自动切回时间/光照/温湿度
+MESSAGE_HOLD_MS = 10_000
+message_buf = None         # 128x64 MONO_VLSB，由 App 渲染好传下来
+message_text = ""
+message_until = None
 action_kind = None         # "feed" / "reward"
 action_until = None
 applied_config_rev = -1
@@ -523,6 +522,40 @@ def _apply_downlink_config():
     child_visible = bool(cfg.get("child_visible", 1))
     print("config rev %d applied: goal=%sh dist=%s-%s light_min=%s voice=%d" %
           (rev, goal_h, dmin, dmax, light_min, voice_enabled))
+
+
+def _apply_message(now_ms):
+    """家长捎的话：直接把 App 渲染好的位图铺到 OLED 上。
+
+    OLED 用的是 framebuf 内置的 8x8 ASCII 字库，画不了中文。位图在手机上
+    渲染 —— 那边有完整的中文字体，板子一个字库都不用带。
+    """
+    global message_buf, message_text, message_until
+    if uplink is None:
+        return
+    m = uplink.take_message()
+    if not m:
+        return
+    message_text = m.get("text", "")
+    raw = m.get("bitmap")
+    message_buf = None
+    if raw:
+        try:
+            import ubinascii
+            data = ubinascii.a2b_base64(raw)
+            if len(data) == 128 * 64 // 8:
+                message_buf = framebuf.FrameBuffer(
+                    bytearray(data), 128, 64, framebuf.MONO_VLSB)
+        except Exception as exc:
+            print("message bitmap failed:", exc)
+    message_until = time.ticks_add(now_ms, MESSAGE_HOLD_MS)
+    print("message:", message_text)
+
+
+def _message_active(now_ms):
+    if message_until is None:
+        return False
+    return time.ticks_diff(message_until, now_ms) > 0
 
 
 def _apply_actions(now_ms):
@@ -617,21 +650,11 @@ while True:
                 uplink.poll()          # 空闲时轻量拉配置和家长动作
             _apply_downlink_config()   # App 改的阈值真正生效
             _apply_actions(loop_now)   # 家长按的喂草/奖励
+            _apply_message(loop_now)   # 家长捎的话，OLED 接管十秒
         except Exception as exc:
             print("uplink pump failed:", exc)
-    if (
-        last_volume_poll is None
-        or time.ticks_diff(loop_now, last_volume_poll) >= 50
-    ):
-        volume_raw = sum(volume_knob.read() for _ in range(4)) // 4
-        voice_player.set_volume_adc(volume_raw)
-        last_volume_poll = loop_now
     voice_player.update(loop_now)
     voice_qa.update(loop_now)
-    # The authenticated Mac service can attach a deterministic device action
-    # to a voice answer. Apply it while the response header is still resident;
-    # the handler de-duplicates the many cooperative loops during playback.
-    voice_action_handler.consume(getattr(voice_qa, "_response", None))
     discovered_rtc = voice_qa.take_beijing_rtc()
     if discovered_rtc is not None:
         try:
@@ -757,9 +780,6 @@ while True:
             "beijing_time": day_key + " " + beijing_time,
             "present": bool(presence["present"]),
             "study_seconds": study_seconds,
-            "daily_study_seconds": pet_system.daily_study_ms // 1000,
-            "daily_goal_seconds": pet_system.daily_goal_seconds,
-            "pet_growth": pet_system.growth,
             "distance_mm": distance_mm,
             "pir_motion": bool(motion),
             "light_1": v1,
@@ -781,6 +801,8 @@ while True:
         now, day_key, time.ticks_diff,
     )
 
+    # 时钟没同步就先不传 —— RTC 未设时 time.localtime() 是 2000 年，
+    # 传上去的样本会落在一个永远查不到的日期里。
     if uplink is not None and clock_synced:
         try:
             # 板子的 visual_state() 只有 NORMAL/SICK/EVOLVED 三档，而 App
@@ -800,6 +822,7 @@ while True:
                 form = "evolved"
             else:
                 form = "normal"
+            uplink.study_seconds = pet_state["daily_study_seconds"]
             _uplink_tick(
                 day_key + " %02d:%02d" % (clock[3], clock[4]),
                 presence["present"], distance_mm, v1, v2,
@@ -817,32 +840,42 @@ while True:
         or time.ticks_diff(now, last_oled_refresh) >= 200
     ):
         oled.fill(0)
-        oled.text("BJ " + beijing_time, 16, 0, 1)
-        light_line = "LIGHT: %3d%%" % light_percent
-        oled.text(
-            light_line, max(0, (128 - len(light_line) * 8) // 2), 16, 1
-        )
-        if temperature_c is None:
-            temperature_line = "TEMP: ---C"
+        if _message_active(now):
+            # 捎话期间整块屏让给它，十秒后自动切回
+            if message_buf is not None:
+                oled.blit(message_buf, 0, 0)
+            else:
+                # 没有位图（比如纯 ASCII 的短句）就用内置字库凑合画
+                for i in range(0, min(len(message_text), 48), 16):
+                    oled.text(message_text[i:i + 16], 0, 8 + (i // 16) * 12, 1)
+            oled.show()
         else:
-            temperature_line = "TEMP: %3dC" % temperature_c
-        oled.text(
-            temperature_line,
-            max(0, (128 - len(temperature_line) * 8) // 2),
-            32,
-            1,
-        )
-        if humidity_percent is None:
-            humidity_line = "HUMI: ---%"
-        else:
-            humidity_line = "HUMI: %3d%%" % humidity_percent
-        oled.text(
-            humidity_line,
-            max(0, (128 - len(humidity_line) * 8) // 2),
-            48,
-            1,
-        )
-        oled.show()
+            oled.text("BJ " + beijing_time, 16, 0, 1)
+            light_line = "LIGHT: %3d%%" % light_percent
+            oled.text(
+                light_line, max(0, (128 - len(light_line) * 8) // 2), 16, 1
+            )
+            if temperature_c is None:
+                temperature_line = "TEMP: ---C"
+            else:
+                temperature_line = "TEMP: %3dC" % temperature_c
+            oled.text(
+                temperature_line,
+                max(0, (128 - len(temperature_line) * 8) // 2),
+                32,
+                1,
+            )
+            if humidity_percent is None:
+                humidity_line = "HUMI: ---%"
+            else:
+                humidity_line = "HUMI: %3d%%" % humidity_percent
+            oled.text(
+                humidity_line,
+                max(0, (128 - len(humidity_line) * 8) // 2),
+                48,
+                1,
+            )
+            oled.show()
         last_oled_refresh = now
 
     # LCD: normal/evolved/sick pet animation plus study/environment stats.
@@ -853,20 +886,20 @@ while True:
         low_light_voice_active = (
             voice_player.playing
             and voice_player.path == "/light_too_dark.pcm"
-            and low_light_animation_assets_ok
+            and check_assets_ok
         )
         rest_break_voice_active = (
             voice_player.playing
             and voice_player.path == "/drink_water.pcm"
-            and rest_break_animation_assets_ok
+            and cross_assets_ok
         )
-        low_light_voice_animator.update(
+        check_animator.update(
             now,
             low_light_voice_active,
             time.ticks_diff,
             time.ticks_add,
         )
-        rest_break_voice_animator.update(
+        cross_animator.update(
             now,
             rest_break_voice_active,
             time.ticks_diff,
@@ -903,8 +936,8 @@ while True:
             # 家长刚在 App 上按了喂草/奖励。用现成的帧：喂草放跳跃动画，
             # 奖励放开花帧 —— 板子上没有专门的"被投喂"素材。
             normal_region_only = False
-            if action_kind == "reward" and lcd_evolved_sprites:
-                pet_sprite = lcd_evolved_sprites[(now // 400) % 4]
+            if action_kind == "reward" and lcd_heart_sprites:
+                pet_sprite = lcd_heart_sprites[(now // 400) % 4]
                 pet_title = "REWARD!"
                 pet_name = "THANKS"
             elif normal_jump_assets_ok:
@@ -916,17 +949,20 @@ while True:
                 pet_title = "FED!"
                 pet_name = "YUM"
         elif low_light_voice_active:
-            pet_sprite = lcd_low_light_sprites[
-                low_light_voice_animator.frame
-            ]
+            # 光线偏暗是坏消息，画叉不画勾。原来这里用的是 lcd_check_sprites ——
+            # 那组素材在板上叫 low_light_*，但画的其实是绿对勾。
+            pet_sprite = lcd_cross_sprites[check_animator.frame]
             pet_title = "LAMP ALERT"
             pet_name = "MOMO"
         elif rest_break_voice_active:
-            pet_sprite = lcd_rest_break_sprites[
-                rest_break_voice_animator.frame
-            ]
+            pet_sprite = lcd_cross_sprites[cross_animator.frame]
             pet_title = "BREAK TIME"
             pet_name = "MOMO"
+        elif pet_state["daily_goal_percent"] >= 100 and check_assets_ok:
+            # 达成每日目标 → 举对勾。原来这一档根本没有视觉反馈。
+            pet_sprite = lcd_check_sprites[(now // 125) % 8]
+            pet_title = "GOAL DONE"
+            pet_name = "YES"
         elif visual_state == "SICK":
             animation_frame = (now // 500) % 4
             pet_sprite = lcd_sick_sprites[animation_frame]
@@ -934,7 +970,7 @@ while True:
             pet_name = "SICK"
         elif visual_state == "EVOLVED":
             animation_frame = (now // 400) % 4
-            pet_sprite = lcd_evolved_sprites[animation_frame]
+            pet_sprite = lcd_heart_sprites[animation_frame]
             pet_title = "PET HAPPY"
             pet_name = "HAPPY"
         else:
@@ -974,13 +1010,6 @@ while True:
                 ),
                 13, 202, WHITE,
             )
-        volume_text = "VOL %3d%%" % voice_player.volume_percent
-        lcd_fb.text(
-            volume_text,
-            max(7, (150 - len(volume_text) * 8) // 2),
-            220,
-            WHITE,
-        )
         lcd_fb.text("%3d" % pet_state["stamina"], 200, 30, WHITE)
         stamina_width = 56 * pet_state["stamina"] // 100
         if stamina_width:

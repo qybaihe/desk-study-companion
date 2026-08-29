@@ -8,6 +8,7 @@ protocol StudyDataSource {
     func study() async throws -> StudyReport
     func diary() async throws -> [DiaryLine]
     func milestones() async throws -> [Milestone]
+    func asks() async throws -> AskReport
     func weekly(week: String?) async throws -> WeeklyReport
     func weeklyList() async throws -> [WeekRef]
     func reminders() async throws -> ReminderReport
@@ -20,6 +21,7 @@ struct MockSource: StudyDataSource {
     func study() async throws -> StudyReport        { Mock.study }
     func diary() async throws -> [DiaryLine]        { Mock.diary }
     func milestones() async throws -> [Milestone]   { Mock.milestones }
+    func asks() async throws -> AskReport            { Mock.asks }
     func weekly(week: String?) async throws -> WeeklyReport { Mock.weekly }
     func weeklyList() async throws -> [WeekRef]     { [] }
     func reminders() async throws -> ReminderReport { Mock.reminders }
@@ -55,6 +57,7 @@ struct APISource: StudyDataSource {
     func study() async throws -> StudyReport        { try await get("api/study") }
     func diary() async throws -> [DiaryLine]        { try await get("api/diary") }
     func milestones() async throws -> [Milestone]   { try await get("api/milestones") }
+    func asks() async throws -> AskReport            { try await get("api/ask") }
     func weekly(week: String?) async throws -> WeeklyReport {
         try await get("api/weekly",
                       extra: week.map { [URLQueryItem(name: "week", value: $0)] } ?? [])
@@ -99,6 +102,15 @@ struct APISource: StudyDataSource {
         try await post("api/action", ["kind": kind])
     }
 
+    /// 给孩子捎一句话。位图在这一端渲染好 —— 板子的 OLED 没有中文字库。
+    func sendMessage(_ text: String) async throws {
+        var body: [String: Any] = ["text": text]
+        if let bmp = OLEDBitmap.render(text) {
+            body["bitmap"] = bmp.base64EncodedString()
+        }
+        try await post("api/message", body)
+    }
+
     /// 建档/改名。child_id 固定，这里只写展示信息。
     func putChild(name: String, grade: String) async throws {
         var req = URLRequest(url: baseURL.appendingPathComponent("api/child"))
@@ -125,6 +137,7 @@ final class Store: ObservableObject {
     @Published var study: StudyReport = Mock.study
     @Published var diary: [DiaryLine] = Mock.diary
     @Published var milestones: [Milestone] = Mock.milestones
+    @Published var asks: AskReport = Mock.asks
     @Published var weekly: WeeklyReport = Mock.weekly
     @Published var weeks: [WeekRef] = []
     /// nil = 最新一周。选了往期就固定在那一周，轮询不再把它冲掉。
@@ -152,6 +165,7 @@ final class Store: ObservableObject {
             study      = Cache.load(StudyReport.self, "study") ?? study
             diary      = Cache.load([DiaryLine].self, "diary") ?? diary
             milestones = Cache.load([Milestone].self, "milestones") ?? milestones
+            asks       = Cache.load(AskReport.self, "asks") ?? asks
             weekly     = Cache.load(WeeklyReport.self, "weekly") ?? weekly
             weeks      = Cache.load([WeekRef].self, "weeks") ?? weeks
             reminders  = Cache.load(ReminderReport.self, "reminders") ?? reminders
@@ -196,6 +210,14 @@ final class Store: ObservableObject {
         catch { lastError = error.localizedDescription; return false }
     }
 
+    /// 给孩子捎一句话。板子取走后在 OLED 上显示十秒。
+    @discardableResult
+    func sendMessage(_ text: String) async -> Bool {
+        guard let api = source as? APISource else { return false }
+        do { try await api.sendMessage(text); lastError = nil; return true }
+        catch { lastError = error.localizedDescription; return false }
+    }
+
     /// 切到某一期。传 nil 回到最新。
     func selectWeek(_ key: String?) async {
         pinnedWeek = key
@@ -214,6 +236,7 @@ final class Store: ObservableObject {
             async let c = src.study()
             async let d = src.diary()
             async let e = src.milestones()
+            async let k = src.asks()
             async let f = src.weekly(week: week)
             async let g = src.reminders()
             async let h = src.settings()
@@ -224,6 +247,7 @@ final class Store: ObservableObject {
             study      = try await c
             diary      = try await d
             milestones = try await e
+            asks       = try await k
             weekly     = try await f
             reminders  = try await g
             settings   = try await h
@@ -241,7 +265,7 @@ final class Store: ObservableObject {
     private func cacheAll() {
         Cache.save(snapshot, "snapshot");   Cache.save(eye, "eye")
         Cache.save(study, "study");         Cache.save(diary, "diary")
-        Cache.save(milestones, "milestones")
+        Cache.save(milestones, "milestones"); Cache.save(asks, "asks")
         Cache.save(reminders, "reminders"); Cache.save(settings, "settings")
         Cache.save(weeks, "weeks")
         // 翻往期时不要把某一期覆盖成"最新一期"的缓存

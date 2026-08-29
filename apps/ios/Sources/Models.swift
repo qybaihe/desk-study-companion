@@ -24,14 +24,17 @@ enum PetForm: String, Codable, CaseIterable {
 
     /// 逐帧动画。帧取自设备端 LCD 素材，已还原成透明底
     /// （设备只画白色和配件色，黑色的脸是 LCD 黑底透出来的）。
+    ///
+    /// 素材名按画的内容取，不按谁用它 —— 原来那组绿对勾叫 animLowLight，
+    /// 于是「光线偏暗」这个坏状态举着对勾，「达成目标」反而只有个爱心。
     var animation: (prefix: String, count: Int, fps: Double)? {
         switch self {
         case .normal:    return ("animNormal", 31, 14)
-        case .evolved:   return ("animEvolved", 4, 5)
+        case .evolved:   return ("animCheck", 8, 8)     // 达成目标 → ✓
         case .sick:      return ("animSick", 4, 3.5)
-        case .lowLight:  return ("animLowLight", 8, 8)
-        case .restBreak: return ("animRestBreak", 8, 8)
-        case .fed:       return nil          // 无动画帧，用静态母版
+        case .lowLight:  return ("animCross", 8, 8)     // 光线偏暗 → ✗
+        case .restBreak: return ("animCross", 8, 8)     // 该休息了 → ✗
+        case .fed:       return ("animHeart", 4, 5)     // 被喂/奖励 → ♥
         case .away:      return nil
         }
     }
@@ -40,11 +43,11 @@ enum PetForm: String, Codable, CaseIterable {
     var asset: String {
         switch self {
         case .normal:    return "sheepNormal"
-        case .evolved:   return "sheepEvolved"
+        case .evolved:   return "sheepCheck"
         case .sick:      return "sheepSick"
-        case .lowLight:  return "sheepClover"
-        case .restBreak: return "sheepFlower"
-        case .fed:       return "sheepBlush"
+        case .lowLight:  return "sheepCross"
+        case .restBreak: return "sheepCross"
+        case .fed:       return "sheepHeart"
         case .away:      return "sheepNormal"
         }
     }
@@ -208,6 +211,25 @@ struct ReminderReport: Codable, Equatable {
     var weekly: [Int]            // 近 7 周响应率
     var weekLabels: [String]
     var note: String
+}
+
+// MARK: - 提问记录
+
+/// 孩子在设备上问过的一句话，和小羊的回答。
+/// 板子自己写不了库 —— 它手里只有音频，文本在语音服务那一侧。
+struct AskItem: Codable, Identifiable, Equatable {
+    var id: String { day + when + question }
+    var when: String        // 08-29 09:19
+    var day: String         // 2026-08-29
+    var topic: String
+    var question: String
+    var answer: String
+}
+
+struct AskReport: Codable, Equatable {
+    var items: [AskItem]
+    var total: Int
+    var todayCount: Int
 }
 
 // MARK: - 小羊
